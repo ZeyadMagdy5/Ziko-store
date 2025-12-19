@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://bags-shop.runasp.net',
+        target: 'https://bags-shop.runasp.net',
         changeOrigin: true,
         secure: false,
       }
