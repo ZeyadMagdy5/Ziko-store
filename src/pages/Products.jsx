@@ -1,8 +1,8 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
-import { pageVariants, staggerContainer, staggerItem } from "../lib/animations";
+import { pageVariants } from "../lib/animations";
 import { fetchUserProducts, fetchUserCollections, resolveImageUrl } from "../lib/api";
 import { useLanguage } from "../context/LanguageContext";
 import { Search, Filter, Tag, X } from "lucide-react";
