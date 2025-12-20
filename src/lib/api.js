@@ -108,3 +108,20 @@ export async function createUserPayment(paymentData) {
   });
   return handleResponse(response);
 }
+
+export async function fetchUserOrders(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(`${BASE_URL}/api/user/orders?${query}`, {
+    headers: getHeaders(),
+    credentials: 'include'
+  });
+  return handleResponse(response);
+}
+
+export async function fetchUserOrderById(id) {
+  const response = await fetch(`${BASE_URL}/api/user/orders/${id}`, {
+    headers: getHeaders(),
+    credentials: 'include'
+  });
+  return handleResponse(response);
+}

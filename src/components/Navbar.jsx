@@ -63,6 +63,15 @@ export default function Navbar() {
               />
             )}
           </Link>
+          <Link to="/orders" className="relative text-sm font-medium hover:text-accent transition-colors dark:text-gray-300">
+            {language === "ar" ? "طلباتي" : "Orders"}
+            {location.pathname === "/orders" && (
+              <motion.div
+                layoutId="underline"
+                className="absolute left-0 top-full block h-[2px] w-full bg-accent mt-1"
+              />
+            )}
+          </Link>
 
           <button
             onClick={toggleLanguage}
@@ -135,6 +144,9 @@ export default function Navbar() {
               </Link>
               <Link to="/products" className="text-lg font-medium dark:text-gray-200">
                 {language === "ar" ? "المنتجات" : "Products"}
+              </Link>
+              <Link to="/orders" className="text-lg font-medium dark:text-gray-200">
+                {language === "ar" ? "طلباتي" : "Orders"}
               </Link>
             </div>
           </motion.div>

@@ -28,7 +28,8 @@ export default function Home() {
         const dataMessage = searchParams.get('data.message');
         const merchantOrderId = searchParams.get('merchant_order_id');
 
-        if (success !== null) {
+        // Only process if we have payment parameters and haven't processed them yet
+        if (success !== null && !paymentStatus) {
             if (success === 'true') {
                 // Payment successful
                 setPaymentStatus('success');
@@ -36,11 +37,16 @@ export default function Home() {
                 clearCart();
                 localStorage.removeItem('cart');
 
-                // Clear query params after 5 seconds and hide message
+                // Clear message first, then query params after 5 seconds
                 setTimeout(() => {
                     setPaymentStatus(null);
-                    setSearchParams({});
+                    setPaymentMessage("");
                 }, 5000);
+
+                // Clear query params slightly after to avoid re-triggering
+                setTimeout(() => {
+                    setSearchParams({});
+                }, 5100);
             } else if (errorOccured === 'true' || success === 'false') {
                 // Payment failed
                 setPaymentStatus('error');
@@ -50,12 +56,14 @@ export default function Home() {
 
                 // Auto redirect to cart with orderId after 3 seconds
                 setTimeout(() => {
+                    setPaymentStatus(null);
+                    setPaymentMessage("");
                     setSearchParams({});
                     navigate(`/cart?orderId=${merchantOrderId}`);
                 }, 3000);
             }
         }
-    }, [searchParams, language, clearCart, navigate, setSearchParams]);
+    }, [searchParams, language, clearCart, navigate, setSearchParams, paymentStatus]);
 
     useEffect(() => {
         const loadFeatured = async () => {

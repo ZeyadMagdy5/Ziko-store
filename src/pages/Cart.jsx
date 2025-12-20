@@ -26,13 +26,14 @@ export default function Cart() {
         address: ""
     });
 
-    const [paymentMethod, setPaymentMethod] = useState(null); // 1 for Visa, 2 for Wallet
+    const [paymentMethod, setPaymentMethod] = useState(null);
     const [walletPhone, setWalletPhone] = useState("");
 
-    // Check for existing order ID from query params (payment retry)
+
     useEffect(() => {
         const orderIdParam = searchParams.get('orderId');
         if (orderIdParam) {
+            console.log("Payment retry detected. Order ID:", orderIdParam);
             setOrderId(Number(orderIdParam));
             setStep('payment');
             // Clear the query param
@@ -93,13 +94,19 @@ export default function Cart() {
             return;
         }
 
+        if (!orderId) {
+            setError(language === "ar" ? "معرف الطلب مفقود" : "Order ID is missing");
+            console.error("Cannot create payment: orderId is null or undefined");
+            return;
+        }
+
         setLoading(true);
         setError(null);
 
         try {
             const paymentPayload = {
-                orderId: orderId,
-                paymentMethodId: paymentMethod
+                orderId: Number(orderId),
+                paymentMethodId: Number(paymentMethod)
             };
 
             // Only include walletPhoneNumber if payment method is wallet
@@ -108,6 +115,7 @@ export default function Cart() {
             }
 
             console.log("Submitting Payment Payload:", paymentPayload);
+            console.log("Payload types - orderId:", typeof paymentPayload.orderId, "paymentMethodId:", typeof paymentPayload.paymentMethodId);
 
             const response = await createUserPayment(paymentPayload);
             if (response.success && response.data.paymentUrl) {
