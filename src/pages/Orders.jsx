@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Filter, ChevronDown, ChevronUp, Package, CreditCard, X, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Package, CreditCard, X, Loader2 } from "lucide-react";
 import { fetchUserOrders, fetchUserOrderById, resolveImageUrl } from "../lib/api";
 import { useLanguage } from "../context/LanguageContext";
 import { pageVariants } from "../lib/animations";
@@ -13,12 +13,6 @@ export default function Orders() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Filter states
-    const [statusFilter, setStatusFilter] = useState("");
-    const [createdFrom, setCreatedFrom] = useState("");
-    const [createdTo, setCreatedTo] = useState("");
-
-    // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
@@ -29,20 +23,9 @@ export default function Orders() {
     const [orderDetails, setOrderDetails] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
 
-    const orderStatuses = [
-        { value: "", label: language === "ar" ? "جميع الحالات" : "All Statuses" },
-        { value: "0", label: language === "ar" ? "قيد الانتظار" : "Pending" },
-        { value: "1", label: language === "ar" ? "قيد المعالجة" : "Processing" },
-        { value: "2", label: language === "ar" ? "تم الشحن" : "Shipped" },
-        { value: "3", label: language === "ar" ? "تم التوصيل" : "Delivered" },
-        { value: "4", label: language === "ar" ? "ملغي" : "Cancelled" },
-        { value: "5", label: language === "ar" ? "منتهي الصلاحية" : "Expired" },
-        { value: "6", label: language === "ar" ? "مدفوع" : "Paid" }
-    ];
-
     useEffect(() => {
         loadOrders();
-    }, [currentPage, pageSize, statusFilter, createdFrom, createdTo]);
+    }, [currentPage, pageSize]);
 
     const loadOrders = async () => {
         setLoading(true);
@@ -53,10 +36,6 @@ export default function Orders() {
                 page: currentPage,
                 pageSize: pageSize
             };
-
-            if (statusFilter) params.status = statusFilter;
-            if (createdFrom) params.createdFrom = createdFrom;
-            if (createdTo) params.createdTo = createdTo;
 
             const response = await fetchUserOrders(params);
 
@@ -104,27 +83,41 @@ export default function Orders() {
         setExpandedOrders(newExpanded);
     };
 
-    const clearFilters = () => {
-        setStatusFilter("");
-        setCreatedFrom("");
-        setCreatedTo("");
-        setCurrentPage(1);
+    const arabicTranslations = {
+        "pending": "قيد الانتظار",
+        "processing": "قيد المعالجة",
+        "shipped": "تم الشحن",
+        "delivered": "تم التوصيل",
+        "cancelled": "ملغي",
+        "expired": "منتهي الصلاحية",
+        "paid": "مدفوع",
+        "completed": "مكتمل",
+        "failed": "فشل الدفع"
+    };
+
+    const getStatusLabel = (status) => {
+        if (!status) return "";
+        const lowerStatus = status.toLowerCase();
+        if (language === "ar") {
+            return arabicTranslations[lowerStatus] || status;
+        }
+        return status;
     };
 
     const getStatusBadgeColor = (status) => {
         const statusLower = status?.toLowerCase() || "";
-        if (statusLower === "paid" || statusLower === "delivered") return "bg-green-500";
-        if (statusLower === "pending" || statusLower === "processing") return "bg-yellow-500";
-        if (statusLower === "shipped") return "bg-blue-500";
-        if (statusLower === "cancelled" || statusLower === "expired") return "bg-red-500";
+        if (["paid", "delivered", "completed"].includes(statusLower)) return "bg-green-500";
+        if (["pending", "processing"].includes(statusLower)) return "bg-yellow-500";
+        if (["shipped"].includes(statusLower)) return "bg-blue-500";
+        if (["cancelled", "expired", "failed"].includes(statusLower)) return "bg-red-500";
         return "bg-gray-500";
     };
 
     const getPaymentStatusColor = (status) => {
         const statusLower = status?.toLowerCase() || "";
-        if (statusLower === "completed" || statusLower === "paid") return "bg-green-500";
-        if (statusLower === "pending") return "bg-yellow-500";
-        if (statusLower === "failed") return "bg-red-500";
+        if (["completed", "paid"].includes(statusLower)) return "bg-green-500";
+        if (["pending"].includes(statusLower)) return "bg-yellow-500";
+        if (["failed"].includes(statusLower)) return "bg-red-500";
         return "bg-gray-500";
     };
 
@@ -182,68 +175,6 @@ export default function Orders() {
                 {language === "ar" ? "طلباتي" : "My Orders"}
             </h1>
 
-            {/* Filters Section */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm mb-8">
-                <div className="flex items-center gap-2 mb-4">
-                    <Filter size={20} className="dark:text-white" />
-                    <h2 className="text-lg font-bold dark:text-white">
-                        {language === "ar" ? "تصفية النتائج" : "Filters"}
-                    </h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-2 dark:text-gray-300">
-                            {language === "ar" ? "الحالة" : "Status"}
-                        </label>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg border dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                        >
-                            {orderStatuses.map((status) => (
-                                <option key={status.value} value={status.value}>
-                                    {status.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-2 dark:text-gray-300">
-                            {language === "ar" ? "من تاريخ" : "From Date"}
-                        </label>
-                        <input
-                            type="date"
-                            value={createdFrom}
-                            onChange={(e) => setCreatedFrom(e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg border dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-2 dark:text-gray-300">
-                            {language === "ar" ? "إلى تاريخ" : "To Date"}
-                        </label>
-                        <input
-                            type="date"
-                            value={createdTo}
-                            onChange={(e) => setCreatedTo(e.target.value)}
-                            className="w-full px-4 py-2 rounded-lg border dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-accent outline-none"
-                        />
-                    </div>
-
-                    <div className="flex items-end">
-                        <button
-                            onClick={clearFilters}
-                            className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                        >
-                            {language === "ar" ? "مسح الفلاتر" : "Clear Filters"}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             {/* Orders List */}
             {loading ? (
                 <div className="flex justify-center items-center py-20">
@@ -264,7 +195,7 @@ export default function Orders() {
                     </p>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                     <AnimatePresence mode="popLayout">
                         {orders.map((order) => (
                             <motion.div
@@ -273,12 +204,43 @@ export default function Orders() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
-                                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+                                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300 group"
                             >
-                                {/* Product Images Gallery */}
+                                {/* Header / Summary Section */}
+                                <div className="p-6">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl">
+                                                <Package className="w-6 h-6 text-accent" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-heading font-bold text-lg dark:text-white flex items-center gap-2">
+                                                    {language === "ar" ? "طلب #" : "Order #"}{order.id}
+                                                </h3>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                                    {formatDate(order.createdAt)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <span className={`${getStatusBadgeColor(order.status)} text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-sm`}>
+                                                {getStatusLabel(order.status)}
+                                            </span>
+                                            <div className="text-right">
+                                                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">{language === "ar" ? "الإجمالي" : "Total"}</p>
+                                                <span className="font-bold text-xl text-primary dark:text-white">
+                                                    {(Number(order.finalPrice) || 0).toFixed(2)} <span className="text-sm text-gray-500">{language === "ar" ? "ج.م" : "EGP"}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Product Preview Strip */}
                                 {order.orderItems && order.orderItems.length > 0 && (
-                                    <div className="bg-gray-50 dark:bg-gray-900 p-4">
-                                        <div className="flex gap-3 overflow-x-auto pb-2">
+                                    <div className="px-6 pb-6 border-b border-gray-100 dark:border-gray-700/50">
+                                        <div className="flex gap-3 overflow-x-auto py-2 scrollbar-hide">
                                             {order.orderItems.map((item, index) => {
                                                 const productImage = item.product?.images?.[0]?.imageUrl;
                                                 const productName = language === "ar"
@@ -286,8 +248,8 @@ export default function Orders() {
                                                     : (item.product?.enName || item.productName);
 
                                                 return productImage ? (
-                                                    <div key={index} className="relative shrink-0">
-                                                        <div className="w-24 h-24 rounded-lg overflow-hidden bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
+                                                    <div key={index} className="relative shrink-0 group/item">
+                                                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
                                                             <img
                                                                 src={resolveImageUrl(productImage)}
                                                                 alt={productName}
@@ -295,7 +257,7 @@ export default function Orders() {
                                                             />
                                                         </div>
                                                         {item.quantity > 1 && (
-                                                            <span className="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg">
+                                                            <span className="absolute -top-2 -right-2 bg-accent text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
                                                                 {item.quantity}
                                                             </span>
                                                         )}
@@ -306,115 +268,90 @@ export default function Orders() {
                                     </div>
                                 )}
 
-                                <div className="p-6">
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                                        <div className="flex items-center gap-4">
-                                            <div>
-                                                <h3 className="font-bold text-lg dark:text-white">
-                                                    {language === "ar" ? "طلب #" : "Order #"}{order.id}
-                                                </h3>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {formatDate(order.createdAt)}
-                                                </p>
+                                {/* Collapsible Details Section */}
+                                <AnimatePresence>
+                                    {expandedOrders.has(order.id) && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden bg-gray-50/50 dark:bg-gray-900/30"
+                                        >
+                                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-gray-100 dark:border-gray-700">
+                                                {/* Delivery Info */}
+                                                <div className="space-y-4">
+                                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                                        {language === "ar" ? "تفاصيل التوصيل" : "Delivery Details"}
+                                                    </h4>
+                                                    <div className="space-y-3 text-sm">
+                                                        <div className="flex justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
+                                                            <span className="text-gray-500">{language === "ar" ? "العنوان" : "Address"}</span>
+                                                            <span className="font-medium dark:text-gray-200 line-clamp-1 max-w-[60%] text-right">{order.address}</span>
+                                                        </div>
+                                                        <div className="flex justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
+                                                            <span className="text-gray-500">{language === "ar" ? "الهاتف" : "Phone"}</span>
+                                                            <span className="font-medium dark:text-gray-200">{order.phone}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Order Items List */}
+                                                <div className="space-y-4">
+                                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                                        {language === "ar" ? "المنتجات" : "Items"} ({order.orderItems?.length || 0})
+                                                    </h4>
+                                                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                                                        {order.orderItems?.map((item, index) => {
+                                                            const productName = language === "ar"
+                                                                ? (item.product?.arName || item.productName)
+                                                                : (item.product?.enName || item.productName);
+                                                            return (
+                                                                <div key={index} className="flex justify-between items-center text-sm bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="font-medium dark:text-white line-clamp-1">{productName}</span>
+                                                                        <span className="text-xs text-gray-500">x{item.quantity}</span>
+                                                                    </div>
+                                                                    <span className="font-bold dark:text-gray-200">
+                                                                        {item.totalPrice.toFixed(2)}
+                                                                    </span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
-                                        <div className="flex items-center gap-4">
-                                            <span className={`${getStatusBadgeColor(order.status)} text-white px-4 py-1 rounded-full text-sm font-medium`}>
-                                                {order.status}
-                                            </span>
-                                            <span className="font-bold text-lg dark:text-white">
-                                                {order.finalPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {language === "ar" ? "العنوان:" : "Address:"}
-                                            </p>
-                                            <p className="dark:text-white">{order.address}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {language === "ar" ? "الهاتف:" : "Phone:"}
-                                            </p>
-                                            <p className="dark:text-white">{order.phone}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Order Items Toggle */}
+                                {/* Footer / Actions */}
+                                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-700">
                                     <button
                                         onClick={() => toggleOrderExpand(order.id)}
-                                        className="flex items-center gap-2 text-accent hover:text-yellow-600 transition-colors mb-2"
+                                        className="text-sm font-bold text-gray-500 hover:text-accent flex items-center gap-1 transition-colors"
                                     >
-                                        {expandedOrders.has(order.id) ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                        <span className="font-medium">
-                                            {language === "ar" ? "عناصر الطلب" : "Order Items"} ({order.orderItems?.length || 0})
-                                        </span>
+                                        {expandedOrders.has(order.id) ? (
+                                            <>{language === "ar" ? "إخفاء التفاصيل" : "Less Details"} <ChevronUp size={16} /></>
+                                        ) : (
+                                            <>{language === "ar" ? "عرض التفاصيل" : "More Details"} <ChevronDown size={16} /></>
+                                        )}
                                     </button>
 
-                                    {/* Expanded Order Items */}
-                                    <AnimatePresence>
-                                        {expandedOrders.has(order.id) && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: "auto", opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                className="overflow-hidden"
-                                            >
-                                                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-3">
-                                                    {order.orderItems?.map((item, index) => {
-                                                        const productName = language === "ar"
-                                                            ? (item.product?.arName || item.productName)
-                                                            : (item.product?.enName || item.productName);
-                                                        const productImage = item.product?.images?.[0]?.imageUrl;
-
-                                                        return (
-                                                            <div key={index} className="flex gap-3 items-center">
-                                                                {productImage && (
-                                                                    <div className="w-16 h-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
-                                                                        <img
-                                                                            src={resolveImageUrl(productImage)}
-                                                                            alt={productName}
-                                                                            className="w-full h-full object-cover"
-                                                                        />
-                                                                    </div>
-                                                                )}
-                                                                <div className="flex-1">
-                                                                    <p className="font-medium dark:text-white">{productName}</p>
-                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                                        {language === "ar" ? "الكمية:" : "Quantity:"} {item.quantity} × {item.unitPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
-                                                                    </p>
-                                                                </div>
-                                                                <p className="font-bold dark:text-white shrink-0">
-                                                                    {item.totalPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
-                                                                </p>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-
-                                    {/* Action Buttons */}
-                                    <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                                    <div className="flex items-center gap-3 w-full sm:w-auto">
                                         {canPayAgain(order) && (
                                             <button
                                                 onClick={() => handlePayAgain(order.id)}
-                                                className="w-full sm:w-auto px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+                                                className="flex-1 sm:flex-none px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all shadow-md hover:shadow-lg font-bold text-sm flex items-center justify-center gap-2"
                                             >
-                                                <CreditCard size={18} />
-                                                {language === "ar" ? "ادفع الآن" : "Pay Again"}
+                                                <CreditCard size={16} />
+                                                {language === "ar" ? "دفع مرة أخرى" : "Pay Again"}
                                             </button>
                                         )}
                                         <button
                                             onClick={() => handleOrderClick(order)}
-                                            className="w-full sm:w-auto px-6 py-2 bg-accent hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium"
+                                            className="flex-1 sm:flex-none px-6 py-2.5 bg-white dark:bg-gray-800 border-2 border-accent text-accent hover:bg-accent hover:text-white rounded-xl transition-all font-bold text-sm"
                                         >
-                                            {language === "ar" ? "عرض التفاصيل الكاملة" : "View Full Details"}
+                                            {language === "ar" ? "الفاتورة كاملة" : "Full Invoice"}
                                         </button>
                                     </div>
                                 </div>
@@ -511,7 +448,7 @@ export default function Orders() {
                                                     {language === "ar" ? "الحالة:" : "Status:"}
                                                 </p>
                                                 <span className={`${getStatusBadgeColor(orderDetails.status)} text-white px-3 py-1 rounded-full text-sm font-medium inline-block mt-1`}>
-                                                    {orderDetails.status}
+                                                    {getStatusLabel(orderDetails.status)}
                                                 </span>
                                             </div>
                                             <div>
@@ -608,7 +545,7 @@ export default function Orders() {
                                                                     </p>
                                                                 </div>
                                                                 <span className={`${getPaymentStatusColor(payment.status)} text-white px-3 py-1 rounded-full text-xs font-medium`}>
-                                                                    {payment.status}
+                                                                    {getStatusLabel(payment.status)}
                                                                 </span>
                                                             </div>
                                                             <div className="flex justify-between text-sm">
