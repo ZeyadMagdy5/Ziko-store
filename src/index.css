@@ -4,14 +4,21 @@
 
 @layer base {
   :root {
-    --color-primary: #1a1a1a;
-    --color-secondary: #f5f5f5;
-    --color-accent: #d4af37;
+    --color-primary: #27272a;
+    --color-secondary: #f4f4f5;
+    --color-accent: #ca8a04;
   }
 
   html.dark {
-    --color-primary: #ffffff;
-    --color-secondary: #1a1a1a;
+    --color-primary: #f4f4f5;
+    /* Light text for dark mode */
+    --color-secondary: #18181b;
+    /* Zinc 900 for dark background */
+  }
+
+  body {
+    @apply bg-gray-50 text-primary antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
 
@@ -25,9 +32,11 @@
     0% {
       background-position: 0% 50%;
     }
+
     50% {
       background-position: 100% 50%;
     }
+
     100% {
       background-position: 0% 50%;
     }

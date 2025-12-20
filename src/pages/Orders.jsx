@@ -106,26 +106,41 @@ export default function Orders() {
 
     const getStatusBadgeColor = (status) => {
         const statusLower = status?.toLowerCase() || "";
-        if (["paid", "delivered", "completed"].includes(statusLower)) return "bg-green-500";
-        if (["pending", "processing"].includes(statusLower)) return "bg-yellow-500";
-        if (["shipped"].includes(statusLower)) return "bg-blue-500";
-        if (["cancelled", "expired", "failed"].includes(statusLower)) return "bg-red-500";
-        return "bg-gray-500";
+        // Soft pastel colors for easier reading (Light mode specific mainly, but works in dark mode as contrast is handled)
+        if (["paid", "delivered", "completed"].includes(statusLower)) {
+            return "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+        }
+        if (["pending", "processing"].includes(statusLower)) {
+            return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+        }
+        if (["shipped"].includes(statusLower)) {
+            return "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+        }
+        if (["cancelled", "expired", "failed"].includes(statusLower)) {
+            return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800";
+        }
+        return "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
     };
 
     const getPaymentStatusColor = (status) => {
         const statusLower = status?.toLowerCase() || "";
-        if (["completed", "paid"].includes(statusLower)) return "bg-green-500";
-        if (["pending"].includes(statusLower)) return "bg-yellow-500";
-        if (["failed"].includes(statusLower)) return "bg-red-500";
-        return "bg-gray-500";
+        if (["completed", "paid"].includes(statusLower)) {
+            return "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+        }
+        if (["pending"].includes(statusLower)) {
+            return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+        }
+        if (["failed"].includes(statusLower)) {
+            return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800";
+        }
+        return "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
     };
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", {
             year: 'numeric',
-            month: 'short',
+            month: 'long', // changed to long for better aesthetic
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
@@ -163,36 +178,62 @@ export default function Orders() {
         navigate(`/cart?orderId=${orderId}`);
     };
 
+    const handleGoHome = () => {
+        navigate('/');
+    };
+
     return (
         <motion.div
             variants={pageVariants}
             initial="initial"
             animate="animate"
             exit="exit"
-            className="container mx-auto px-4 md:px-6 py-12"
+            className="container mx-auto px-4 md:px-6 py-12 max-w-5xl"
         >
-            <h1 className="text-3xl font-heading font-bold mb-8 dark:text-white">
-                {language === "ar" ? "طلباتي" : "My Orders"}
-            </h1>
+            <div className="mb-10 text-center">
+                <h1 className="text-4xl font-heading font-bold mb-3 text-slate-900 dark:text-white">
+                    {language === "ar" ? "سجل الطلبات" : "Order History"}
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
+                    {language === "ar"
+                        ? "تتبع حالة طلباتك ومشترياتك السابقة"
+                        : "Track the status of your orders and view past purchases"}
+                </p>
+            </div>
 
             {/* Orders List */}
             {loading ? (
-                <div className="flex justify-center items-center py-20">
-                    <Loader2 className="animate-spin text-accent" size={40} />
+                <div className="flex flex-col items-center justify-center py-24">
+                    <Loader2 className="animate-spin text-accent mb-4" size={48} strokeWidth={1.5} />
+                    <p className="text-slate-400 animate-pulse font-medium">Loading orders...</p>
                 </div>
             ) : error ? (
-                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-xl text-center">
-                    {error}
+                <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 p-8 rounded-3xl text-center border border-rose-100 dark:border-rose-800">
+                    <div className="bg-rose-100 dark:bg-rose-800/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <X size={32} />
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">{language === "ar" ? "حدث خطأ" : "Something went wrong"}</h3>
+                    <p>{error}</p>
                 </div>
             ) : orders.length === 0 ? (
-                <div className="bg-gray-50 dark:bg-gray-800 p-12 rounded-xl text-center">
-                    <Package size={48} className="mx-auto mb-4 text-gray-400" />
-                    <h3 className="text-xl font-bold mb-2 dark:text-white">
-                        {language === "ar" ? "لا توجد طلبات" : "No Orders Found"}
+                <div className="bg-white dark:bg-gray-800 p-16 rounded-3xl text-center shadow-sm border border-slate-100 dark:border-gray-700">
+                    <div className="bg-slate-50 dark:bg-gray-700/50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Package size={48} className="text-slate-300 dark:text-gray-500" strokeWidth={1} />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-3 text-slate-900 dark:text-white font-heading">
+                        {language === "ar" ? "لا توجد طلبات" : "No Orders Yet"}
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                        {language === "ar" ? "لم تقم بأي طلبات بعد" : "You haven't placed any orders yet"}
+                    <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto">
+                        {language === "ar"
+                            ? "لم تقم بأي طلبات بعد. تصفح منتجاتنا وابدأ التسوق!"
+                            : "You haven't placed any orders yet. Browse our collection and find something you love!"}
                     </p>
+                    <button
+                        onClick={handleGoHome}
+                        className="px-8 py-3 bg-primary dark:bg-white text-white dark:text-primary rounded-xl font-bold hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+                    >
+                        {language === "ar" ? "ابدأ التسوق" : "Start Shopping"}
+                    </button>
                 </div>
             ) : (
                 <div className="space-y-6">
@@ -204,66 +245,71 @@ export default function Orders() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -20 }}
-                                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300 group"
+                                className="bg-white dark:bg-gray-800/95 backdrop-blur-sm rounded-3xl shadow-[0_2px_20px_-4px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.12)] border border-gray-100 dark:border-gray-700/50 transition-all duration-300 group"
                             >
                                 {/* Header / Summary Section */}
-                                <div className="p-6">
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl">
-                                                <Package className="w-6 h-6 text-accent" />
+                                <div className="p-6 md:p-8 border-b border-gray-50 dark:border-gray-700/50">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                        <div className="flex items-center gap-5">
+                                            <div className="bg-orange-50 dark:bg-gray-700/50 p-4 rounded-2xl group-hover:scale-110 transition-transform duration-300">
+                                                <Package className="w-7 h-7 text-accent" />
                                             </div>
                                             <div>
-                                                <h3 className="font-heading font-bold text-lg dark:text-white flex items-center gap-2">
+                                                <h3 className="font-heading font-bold text-xl dark:text-white flex items-center gap-2 mb-1">
                                                     {language === "ar" ? "طلب #" : "Order #"}{order.id}
                                                 </h3>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
                                                     {formatDate(order.createdAt)}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-3">
-                                            <span className={`${getStatusBadgeColor(order.status)} text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-sm`}>
-                                                {getStatusLabel(order.status)}
-                                            </span>
-                                            <div className="text-right">
-                                                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">{language === "ar" ? "الإجمالي" : "Total"}</p>
-                                                <span className="font-bold text-xl text-primary dark:text-white">
-                                                    {(Number(order.finalPrice) || 0).toFixed(2)} <span className="text-sm text-gray-500">{language === "ar" ? "ج.م" : "EGP"}</span>
+                                        <div className="flex items-center gap-4 border-t md:border-t-0 border-gray-100 dark:border-gray-700 pt-4 md:pt-0 mt-2 md:mt-0 justify-between md:justify-end">
+                                            <div className="text-right mr-4">
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">{language === "ar" ? "الإجمالي" : "TOTAL"}</p>
+                                                <span className="font-heading font-bold text-2xl text-slate-900 dark:text-white">
+                                                    {(Number(order.finalPrice) || 0).toFixed(2)} <span className="text-sm font-sans font-medium text-slate-400">{language === "ar" ? "ج.م" : "EGP"}</span>
                                                 </span>
                                             </div>
+                                            <span className={`${getStatusBadgeColor(order.status)} text-white px-5 py-2 rounded-full text-sm font-bold shadow-lg transition-transform hover:scale-105 active:scale-95`}>
+                                                {getStatusLabel(order.status)}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Product Preview Strip */}
                                 {order.orderItems && order.orderItems.length > 0 && (
-                                    <div className="px-6 pb-6 border-b border-gray-100 dark:border-gray-700/50">
-                                        <div className="flex gap-3 overflow-x-auto py-2 scrollbar-hide">
-                                            {order.orderItems.map((item, index) => {
-                                                const productImage = item.product?.images?.[0]?.imageUrl;
-                                                const productName = language === "ar"
-                                                    ? (item.product?.arName || item.productName)
-                                                    : (item.product?.enName || item.productName);
+                                    <div className="px-6 md:px-8 pb-8">
+                                        <div className="bg-slate-50 dark:bg-gray-900/50 rounded-2xl p-4 border border-slate-100 dark:border-gray-700">
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-1">
+                                                {language === "ar" ? "المنتجات" : "Products"} ({order.orderItems.length})
+                                            </p>
+                                            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                                                {order.orderItems.map((item, index) => {
+                                                    const productImage = item.product?.images?.[0]?.imageUrl;
+                                                    const productName = language === "ar"
+                                                        ? (item.product?.arName || item.productName)
+                                                        : (item.product?.enName || item.productName);
 
-                                                return productImage ? (
-                                                    <div key={index} className="relative shrink-0 group/item">
-                                                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                                                            <img
-                                                                src={resolveImageUrl(productImage)}
-                                                                alt={productName}
-                                                                className="w-full h-full object-cover"
-                                                            />
+                                                    return productImage ? (
+                                                        <div key={index} className="relative shrink-0 group/item cursor-help" title={productName}>
+                                                            <div className="w-16 h-16 rounded-xl overflow-hidden bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-600 shadow-sm transition-transform hover:-translate-y-1">
+                                                                <img
+                                                                    src={resolveImageUrl(productImage)}
+                                                                    alt={productName}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            </div>
+                                                            {item.quantity > 1 && (
+                                                                <span className="absolute -top-2 -right-2 bg-slate-900 dark:bg-white text-white dark:text-primary text-[10px] font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-gray-900 transform scale-90">
+                                                                    {item.quantity}
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        {item.quantity > 1 && (
-                                                            <span className="absolute -top-2 -right-2 bg-accent text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md border-2 border-white dark:border-gray-800">
-                                                                {item.quantity}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                ) : null;
-                                            })}
+                                                    ) : null;
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -275,43 +321,48 @@ export default function Orders() {
                                             initial={{ height: 0, opacity: 0 }}
                                             animate={{ height: "auto", opacity: 1 }}
                                             exit={{ height: 0, opacity: 0 }}
-                                            className="overflow-hidden bg-gray-50/50 dark:bg-gray-900/30"
+                                            className="overflow-hidden bg-slate-50/80 dark:bg-black/20 border-t border-slate-100 dark:border-gray-700"
                                         >
-                                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-gray-100 dark:border-gray-700">
+                                            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
                                                 {/* Delivery Info */}
-                                                <div className="space-y-4">
-                                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                                <div className="space-y-5">
+                                                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-lg">
+                                                        <div className="w-1 h-6 bg-accent rounded-full"></div>
                                                         {language === "ar" ? "تفاصيل التوصيل" : "Delivery Details"}
                                                     </h4>
-                                                    <div className="space-y-3 text-sm">
-                                                        <div className="flex justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
-                                                            <span className="text-gray-500">{language === "ar" ? "العنوان" : "Address"}</span>
-                                                            <span className="font-medium dark:text-gray-200 line-clamp-1 max-w-[60%] text-right">{order.address}</span>
+                                                    <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-slate-100 dark:border-gray-700 shadow-sm space-y-4">
+                                                        <div className="flex justify-between items-start pb-4 border-b border-slate-50 dark:border-gray-700/50">
+                                                            <span className="text-slate-500 text-sm font-medium">{language === "ar" ? "العنوان" : "Address"}</span>
+                                                            <span className="font-semibold text-slate-800 dark:text-gray-200 text-sm max-w-[60%] text-right leading-relaxed">{order.address}</span>
                                                         </div>
-                                                        <div className="flex justify-between border-b border-dashed border-gray-200 dark:border-gray-700 pb-2">
-                                                            <span className="text-gray-500">{language === "ar" ? "الهاتف" : "Phone"}</span>
-                                                            <span className="font-medium dark:text-gray-200">{order.phone}</span>
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-slate-500 text-sm font-medium">{language === "ar" ? "الهاتف" : "Phone"}</span>
+                                                            <span className="font-semibold text-slate-800 dark:text-gray-200 text-sm font-mono tracking-wide">{order.phone}</span>
                                                         </div>
                                                     </div>
                                                 </div>
 
                                                 {/* Order Items List */}
-                                                <div className="space-y-4">
-                                                    <h4 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                                        {language === "ar" ? "المنتجات" : "Items"} ({order.orderItems?.length || 0})
+                                                <div className="space-y-5">
+                                                    <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-lg">
+                                                        <div className="w-1 h-6 bg-accent rounded-full"></div>
+                                                        {language === "ar" ? "قائمة المنتجات" : "Items List"}
                                                     </h4>
-                                                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                                                    <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                                                         {order.orderItems?.map((item, index) => {
                                                             const productName = language === "ar"
                                                                 ? (item.product?.arName || item.productName)
                                                                 : (item.product?.enName || item.productName);
                                                             return (
-                                                                <div key={index} className="flex justify-between items-center text-sm bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700">
-                                                                    <div className="flex flex-col">
-                                                                        <span className="font-medium dark:text-white line-clamp-1">{productName}</span>
-                                                                        <span className="text-xs text-gray-500">x{item.quantity}</span>
+                                                                <div key={index} className="flex justify-between items-center text-sm bg-white dark:bg-gray-800 p-3 rounded-xl border border-slate-100 dark:border-gray-700 shadow-sm hover:border-accent/30 transition-colors">
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <span className="font-bold text-slate-800 dark:text-white line-clamp-1">{productName}</span>
+                                                                        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                                                            <span className="bg-slate-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-[10px]">x{item.quantity}</span>
+                                                                            <span>{(item.unitPrice).toFixed(2)}</span>
+                                                                        </div>
                                                                     </div>
-                                                                    <span className="font-bold dark:text-gray-200">
+                                                                    <span className="font-bold text-accent">
                                                                         {item.totalPrice.toFixed(2)}
                                                                     </span>
                                                                 </div>
@@ -325,15 +376,15 @@ export default function Orders() {
                                 </AnimatePresence>
 
                                 {/* Footer / Actions */}
-                                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-700">
+                                <div className="p-4 md:p-6 bg-white dark:bg-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-gray-700 rounded-b-3xl">
                                     <button
                                         onClick={() => toggleOrderExpand(order.id)}
-                                        className="text-sm font-bold text-gray-500 hover:text-accent flex items-center gap-1 transition-colors"
+                                        className="text-sm font-bold text-slate-500 hover:text-accent flex items-center gap-2 transition-colors px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-gray-800"
                                     >
                                         {expandedOrders.has(order.id) ? (
-                                            <>{language === "ar" ? "إخفاء التفاصيل" : "Less Details"} <ChevronUp size={16} /></>
+                                            <>{language === "ar" ? "إخفاء التفاصيل" : "Hide Details"} <ChevronUp size={16} strokeWidth={2.5} /></>
                                         ) : (
-                                            <>{language === "ar" ? "عرض التفاصيل" : "More Details"} <ChevronDown size={16} /></>
+                                            <>{language === "ar" ? "عرض التفاصيل" : "Show Details"} <ChevronDown size={16} strokeWidth={2.5} /></>
                                         )}
                                     </button>
 
@@ -341,17 +392,17 @@ export default function Orders() {
                                         {canPayAgain(order) && (
                                             <button
                                                 onClick={() => handlePayAgain(order.id)}
-                                                className="flex-1 sm:flex-none px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all shadow-md hover:shadow-lg font-bold text-sm flex items-center justify-center gap-2"
+                                                className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg hover:shadow-emerald-500/30 transform hover:-translate-y-0.5 font-bold text-sm flex items-center justify-center gap-2"
                                             >
-                                                <CreditCard size={16} />
+                                                <CreditCard size={18} />
                                                 {language === "ar" ? "دفع مرة أخرى" : "Pay Again"}
                                             </button>
                                         )}
                                         <button
                                             onClick={() => handleOrderClick(order)}
-                                            className="flex-1 sm:flex-none px-6 py-2.5 bg-white dark:bg-gray-800 border-2 border-accent text-accent hover:bg-accent hover:text-white rounded-xl transition-all font-bold text-sm"
+                                            className="flex-1 sm:flex-none px-6 py-3 bg-white dark:bg-gray-800 border-2 border-slate-200 dark:border-gray-600 text-slate-700 dark:text-gray-200 hover:border-accent hover:text-accent dark:hover:border-accent dark:hover:text-accent rounded-xl transition-all font-bold text-sm shadow-sm hover:shadow-md"
                                         >
-                                            {language === "ar" ? "الفاتورة كاملة" : "Full Invoice"}
+                                            {language === "ar" ? "الفاتورة كاملة" : "Invoice"}
                                         </button>
                                     </div>
                                 </div>

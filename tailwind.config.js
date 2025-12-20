@@ -8,9 +8,10 @@ export default {
     theme: {
         extend: {
             colors: {
-                primary: "#1a1a1a",
-                secondary: "#f5f5f5",
-                accent: "#d4af37", // Gold/Luxury color
+                primary: "#27272a", // Zinc 800 - Softer dark for text
+                secondary: "#f4f4f5", // Zinc 100 - Clean light background
+                accent: "#ca8a04", // Darker Gold (Yellow 600) for better contrast
+                muted: "#71717a", // Zinc 500 - Secondary text
             },
             fontFamily: {
                 sans: ['"Inter"', 'sans-serif'],
