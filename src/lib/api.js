@@ -32,7 +32,8 @@ async function handleResponse(response) {
 export async function fetchUserProducts(params = {}) {
   const query = new URLSearchParams(params).toString();
   const response = await fetch(`${BASE_URL}/api/user/products?${query}`, {
-    headers: getHeaders()
+    headers: getHeaders(),
+    credentials: 'include'
   });
   return handleResponse(response);
 }
@@ -40,7 +41,8 @@ export async function fetchUserProducts(params = {}) {
 export async function fetchUserCollections(params = {}) {
   const query = new URLSearchParams(params).toString();
   const response = await fetch(`${BASE_URL}/api/user/collections?${query}`, {
-    headers: getHeaders()
+    headers: getHeaders(),
+    credentials: 'include'
   });
   return handleResponse(response);
 }
@@ -48,28 +50,32 @@ export async function fetchUserCollections(params = {}) {
 export async function fetchUserDiscounts(params = {}) {
   const query = new URLSearchParams(params).toString();
   const response = await fetch(`${BASE_URL}/api/user/discounts?${query}`, {
-    headers: getHeaders()
+    headers: getHeaders(),
+    credentials: 'include'
   });
   return handleResponse(response);
 }
 
 export async function fetchUserProductById(id) {
   const response = await fetch(`${BASE_URL}/api/user/products/${id}`, {
-    headers: getHeaders()
+    headers: getHeaders(),
+    credentials: 'include'
   });
   return handleResponse(response);
 }
 
 export async function fetchUserCollectionById(id) {
   const response = await fetch(`${BASE_URL}/api/user/collections/${id}`, {
-    headers: getHeaders()
+    headers: getHeaders(),
+    credentials: 'include'
   });
   return handleResponse(response);
 }
 
 export async function fetchUserDiscountById(id) {
   const response = await fetch(`${BASE_URL}/api/user/discounts/${id}`, {
-    headers: getHeaders()
+    headers: getHeaders(),
+    credentials: 'include'
   });
   return handleResponse(response);
 }
@@ -95,6 +101,7 @@ export async function createUserOrder(orderData) {
   const response = await fetch(`${BASE_URL}/api/user/orders`, {
     method: 'POST',
     headers: getHeaders(),
+    credentials: 'include',
     body: JSON.stringify(orderData)
   });
   return handleResponse(response);
@@ -104,6 +111,7 @@ export async function createUserPayment(paymentData) {
   const response = await fetch(`${BASE_URL}/api/user/payments`, {
     method: 'POST',
     headers: getHeaders(),
+    credentials: 'include',
     body: JSON.stringify(paymentData)
   });
   return handleResponse(response);
