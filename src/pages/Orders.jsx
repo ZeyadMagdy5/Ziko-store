@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Filter, ChevronDown, ChevronUp, Package, CreditCard, X, Loader2 } from "lucide-react";
-import { fetchUserOrders, fetchUserOrderById } from "../lib/api";
+import { fetchUserOrders, fetchUserOrderById, resolveImageUrl } from "../lib/api";
 import { useLanguage } from "../context/LanguageContext";
 import { pageVariants } from "../lib/animations";
 
 export default function Orders() {
     const { language } = useLanguage();
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -137,6 +139,37 @@ export default function Orders() {
         });
     };
 
+    // Check if order can be paid again (has failed payment or pending payment, and not expired)
+    const canPayAgain = (order) => {
+        const now = new Date();
+        const expiresAt = new Date(order.expiresAt);
+        const isExpired = now > expiresAt;
+        const statusLower = order.status?.toLowerCase() || "";
+
+        // Can't pay if order is expired, paid, delivered, cancelled, or shipped
+        if (isExpired || statusLower === "paid" || statusLower === "delivered" ||
+            statusLower === "cancelled" || statusLower === "expired" || statusLower === "shipped") {
+            return false;
+        }
+
+        // Check if there are any payments
+        if (!order.payments || order.payments.length === 0) {
+            // No payments yet, can pay if order is pending
+            return statusLower === "pending";
+        }
+
+        // Get the last payment
+        const lastPayment = order.payments[order.payments.length - 1];
+        const paymentStatusLower = lastPayment.status?.toLowerCase() || "";
+
+        // Can pay again if last payment failed or is pending
+        return paymentStatusLower === "failed" || paymentStatusLower === "pending";
+    };
+
+    const handlePayAgain = (orderId) => {
+        navigate(`/cart?orderId=${orderId}`);
+    };
+
     return (
         <motion.div
             variants={pageVariants}
@@ -242,6 +275,37 @@ export default function Orders() {
                                 exit={{ opacity: 0, y: -20 }}
                                 className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
                             >
+                                {/* Product Images Gallery */}
+                                {order.orderItems && order.orderItems.length > 0 && (
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-4">
+                                        <div className="flex gap-3 overflow-x-auto pb-2">
+                                            {order.orderItems.map((item, index) => {
+                                                const productImage = item.product?.images?.[0]?.imageUrl;
+                                                const productName = language === "ar"
+                                                    ? (item.product?.arName || item.productName)
+                                                    : (item.product?.enName || item.productName);
+
+                                                return productImage ? (
+                                                    <div key={index} className="relative shrink-0">
+                                                        <div className="w-24 h-24 rounded-lg overflow-hidden bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
+                                                            <img
+                                                                src={resolveImageUrl(productImage)}
+                                                                alt={productName}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                        {item.quantity > 1 && (
+                                                            <span className="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg">
+                                                                {item.quantity}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : null;
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="p-6">
                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                                         <div className="flex items-center gap-4">
@@ -300,32 +364,59 @@ export default function Orders() {
                                                 exit={{ height: 0, opacity: 0 }}
                                                 className="overflow-hidden"
                                             >
-                                                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-2">
-                                                    {order.orderItems?.map((item, index) => (
-                                                        <div key={index} className="flex justify-between items-center">
-                                                            <div>
-                                                                <p className="font-medium dark:text-white">{item.productName}</p>
-                                                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                                    {language === "ar" ? "الكمية:" : "Quantity:"} {item.quantity} × {item.unitPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+                                                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-3">
+                                                    {order.orderItems?.map((item, index) => {
+                                                        const productName = language === "ar"
+                                                            ? (item.product?.arName || item.productName)
+                                                            : (item.product?.enName || item.productName);
+                                                        const productImage = item.product?.images?.[0]?.imageUrl;
+
+                                                        return (
+                                                            <div key={index} className="flex gap-3 items-center">
+                                                                {productImage && (
+                                                                    <div className="w-16 h-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                                                                        <img
+                                                                            src={resolveImageUrl(productImage)}
+                                                                            alt={productName}
+                                                                            className="w-full h-full object-cover"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1">
+                                                                    <p className="font-medium dark:text-white">{productName}</p>
+                                                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                        {language === "ar" ? "الكمية:" : "Quantity:"} {item.quantity} × {item.unitPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+                                                                    </p>
+                                                                </div>
+                                                                <p className="font-bold dark:text-white shrink-0">
+                                                                    {item.totalPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
                                                                 </p>
                                                             </div>
-                                                            <p className="font-bold dark:text-white">
-                                                                {item.totalPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
-                                                            </p>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
 
-                                    {/* View Details Button */}
-                                    <button
-                                        onClick={() => handleOrderClick(order)}
-                                        className="mt-4 w-full md:w-auto px-6 py-2 bg-accent hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium"
-                                    >
-                                        {language === "ar" ? "عرض التفاصيل الكاملة" : "View Full Details"}
-                                    </button>
+                                    {/* Action Buttons */}
+                                    <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                                        {canPayAgain(order) && (
+                                            <button
+                                                onClick={() => handlePayAgain(order.id)}
+                                                className="w-full sm:w-auto px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+                                            >
+                                                <CreditCard size={18} />
+                                                {language === "ar" ? "ادفع الآن" : "Pay Again"}
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => handleOrderClick(order)}
+                                            className="w-full sm:w-auto px-6 py-2 bg-accent hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium"
+                                        >
+                                            {language === "ar" ? "عرض التفاصيل الكاملة" : "View Full Details"}
+                                        </button>
+                                    </div>
                                 </div>
                             </motion.div>
                         ))}
@@ -464,20 +555,36 @@ export default function Orders() {
                                             <h3 className="font-bold mb-3 dark:text-white">
                                                 {language === "ar" ? "عناصر الطلب:" : "Order Items:"}
                                             </h3>
-                                            <div className="space-y-2">
-                                                {orderDetails.orderItems?.map((item, index) => (
-                                                    <div key={index} className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg flex justify-between items-center">
-                                                        <div>
-                                                            <p className="font-medium dark:text-white">{item.productName}</p>
-                                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                                {item.quantity} × {item.unitPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+                                            <div className="space-y-3">
+                                                {orderDetails.orderItems?.map((item, index) => {
+                                                    const productName = language === "ar"
+                                                        ? (item.product?.arName || item.productName)
+                                                        : (item.product?.enName || item.productName);
+                                                    const productImage = item.product?.images?.[0]?.imageUrl;
+
+                                                    return (
+                                                        <div key={index} className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg flex gap-3 items-center">
+                                                            {productImage && (
+                                                                <div className="w-20 h-20 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                                                                    <img
+                                                                        src={resolveImageUrl(productImage)}
+                                                                        alt={productName}
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <div className="flex-1">
+                                                                <p className="font-medium dark:text-white">{productName}</p>
+                                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                                    {item.quantity} × {item.unitPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+                                                                </p>
+                                                            </div>
+                                                            <p className="font-bold dark:text-white shrink-0">
+                                                                {item.totalPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
                                                             </p>
                                                         </div>
-                                                        <p className="font-bold dark:text-white">
-                                                            {item.totalPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
-                                                        </p>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
 
