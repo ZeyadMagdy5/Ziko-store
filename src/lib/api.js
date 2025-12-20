@@ -1,14 +1,13 @@
 // Direct API connection as requested
 export const BASE_URL = 'https://bags-shop.runasp.net';
 export const IMAGE_BASE_URL = 'https://bags-shop.runasp.net';
-export const API_TOKEN = 'f9ps2BlK0h4QcY8r3uLDjkggwoJGamvWn';
+
 
 function getHeaders() {
-  const headers = {
+  return {
     'Content-Type': 'application/json',
-    'X-API-Key': API_TOKEN
+    'Accept': 'application/json'
   };
-  return headers;
 }
 
 
@@ -83,3 +82,20 @@ export function resolveImageUrl(imagePath) {
 
 
 
+export async function createUserOrder(orderData) {
+  const response = await fetch(`${BASE_URL}/api/user/orders`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(orderData)
+  });
+  return handleResponse(response);
+}
+
+export async function createUserPayment(paymentData) {
+  const response = await fetch(`${BASE_URL}/api/user/payments`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(paymentData)
+  });
+  return handleResponse(response);
+}
