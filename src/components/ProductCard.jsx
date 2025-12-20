@@ -25,6 +25,16 @@ export default function ProductCard({ product }) {
           whileHover={{ scale: 1.1 }}
           transition={{ duration: 0.6 }}
         />
+
+        {/* Discount Badge */}
+        {product.discountPercentage > 0 && (
+          <div className="absolute top-3 left-3 z-10">
+            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md">
+              -{Math.round(product.discountPercentage)}%
+            </span>
+          </div>
+        )}
+
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <motion.button
             initial={{ scale: 0.5, opacity: 0, y: 20 }}
@@ -45,9 +55,16 @@ export default function ProductCard({ product }) {
         <h3 className="text-lg font-heading font-bold mb-1 dark:text-gray-100 truncate">{product.name}</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{product.description}</p>
         <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-accent">
-            {product.price.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
-          </span>
+          <div className="flex flex-col">
+            <span className="text-lg font-bold text-accent">
+              {(Number(product.price) || 0).toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+            </span>
+            {(Number(product.originalPrice) || 0) > (Number(product.price) || 0) && (
+              <span className="text-sm text-gray-400 line-through">
+                {(Number(product.originalPrice) || 0).toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+              </span>
+            )}
+          </div>
           <button
             onClick={() => addToCart(product)}
             className="text-sm font-medium text-primary dark:text-white underline hover:text-accent dark:hover:text-accent decoration-2 underline-offset-4"

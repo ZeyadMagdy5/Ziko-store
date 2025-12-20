@@ -32,11 +32,20 @@ export default function Cart() {
 
     useEffect(() => {
         const orderIdParam = searchParams.get('orderId');
+        const errorParam = searchParams.get('error');
+
         if (orderIdParam) {
             console.log("Payment retry detected. Order ID:", orderIdParam);
             setOrderId(Number(orderIdParam));
             setStep('payment');
-            // Clear the query param
+        }
+
+        if (errorParam) {
+            setError(decodeURIComponent(errorParam));
+        }
+
+        // Clear query params after capturing
+        if (orderIdParam || errorParam) {
             setSearchParams({});
         }
     }, [searchParams, setSearchParams]);
@@ -208,9 +217,16 @@ export default function Cart() {
 
                                         <div className="flex-grow text-center sm:text-left rtl:sm:text-right">
                                             <h3 className="font-heading font-bold text-lg dark:text-white">{item.name}</h3>
-                                            <p className="text-accent font-medium">
-                                                {item.price.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
-                                            </p>
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 justify-center sm:justify-start">
+                                                <p className="text-accent font-medium">
+                                                    {item.price.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+                                                </p>
+                                                {item.originalPrice > item.price && (
+                                                    <p className="text-sm text-gray-400 line-through">
+                                                        {item.originalPrice.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div className="flex items-center gap-3">
