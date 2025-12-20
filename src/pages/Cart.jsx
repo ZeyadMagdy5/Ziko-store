@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Trash2, Plus, Minus, ArrowRight, ArrowLeft, CreditCard, Wallet, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext";
@@ -11,6 +11,7 @@ export default function Cart() {
     const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
     const { language } = useLanguage();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // Steps: 'cart', 'info', 'payment'
     const [step, setStep] = useState('cart');
@@ -27,6 +28,17 @@ export default function Cart() {
 
     const [paymentMethod, setPaymentMethod] = useState(null); // 1 for Visa, 2 for Wallet
     const [walletPhone, setWalletPhone] = useState("");
+
+    // Check for existing order ID from query params (payment retry)
+    useEffect(() => {
+        const orderIdParam = searchParams.get('orderId');
+        if (orderIdParam) {
+            setOrderId(Number(orderIdParam));
+            setStep('payment');
+            // Clear the query param
+            setSearchParams({});
+        }
+    }, [searchParams, setSearchParams]);
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -87,9 +99,15 @@ export default function Cart() {
         try {
             const paymentPayload = {
                 orderId: orderId,
-                paymentMethodId: paymentMethod,
-                walletPhoneNumber: paymentMethod === 2 ? walletPhone : ""
+                paymentMethodId: paymentMethod
             };
+
+            // Only include walletPhoneNumber if payment method is wallet
+            if (paymentMethod === 2) {
+                paymentPayload.walletPhoneNumber = walletPhone;
+            }
+
+            console.log("Submitting Payment Payload:", paymentPayload);
 
             const response = await createUserPayment(paymentPayload);
             if (response.success && response.data.paymentUrl) {
@@ -104,6 +122,7 @@ export default function Cart() {
                 setError(response.message || "Failed to initiate payment");
             }
         } catch (err) {
+            console.error("Payment Error:", err);
             setError(err.message || "An unexpected error occurred");
         } finally {
             setLoading(false);

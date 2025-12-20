@@ -48,10 +48,10 @@ export default function Home() {
                 setPaymentMessage(errorMsg);
                 setOrderId(merchantOrderId);
 
-                // Auto redirect to cart after 3 seconds
+                // Auto redirect to cart with orderId after 3 seconds
                 setTimeout(() => {
                     setSearchParams({});
-                    navigate('/cart');
+                    navigate(`/cart?orderId=${merchantOrderId}`);
                 }, 3000);
             }
         }
@@ -107,8 +107,8 @@ export default function Home() {
                         className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4"
                     >
                         <div className={`p-6 rounded-xl shadow-2xl ${paymentStatus === 'success'
-                                ? 'bg-green-500 text-white'
-                                : 'bg-red-500 text-white'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-red-500 text-white'
                             }`}>
                             <div className="flex items-center gap-4">
                                 {paymentStatus === 'success' ? (

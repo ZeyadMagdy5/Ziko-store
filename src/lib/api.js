@@ -15,7 +15,16 @@ async function handleResponse(response) {
   if (!response.ok) {
     const text = await response.text();
     console.error("API Error Response:", text);
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+
+    // Try to parse JSON error
+    try {
+      const errorData = JSON.parse(text);
+      const errorMessage = errorData.message || errorData.title || `API request failed: ${response.status}`;
+      throw new Error(errorMessage);
+    } catch (e) {
+      // If not JSON, throw with status
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
   }
   return response.json();
 }
