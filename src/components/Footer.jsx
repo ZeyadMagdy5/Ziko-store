@@ -10,12 +10,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           <div>
             <h3 className="text-2xl font-heading font-bold mb-4 bg-gradient-to-r from-primary via-yellow-600 to-accent dark:from-white dark:via-yellow-400 dark:to-accent bg-clip-text text-transparent animate-gradient">
-              {language === "ar" ? "متجر زيكو" : "Ziko Store"}
+              {language === "ar" ? " زيكو ستور" : "Ziko Store"}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
               {language === "ar"
-                ? "حقائب يد فاخرة مصنوعة بأناقة وتطور. مصممة للمرأة العصرية التي تقدر الجودة والأناقة."
-                : "Premium handbags crafted with elegance and sophistication. Designed for the modern woman who appreciates quality and style."}
+                ? "حقائب يد فاخرة مصنوعة بحب وجودة عالية. مصممة لتناسب الموضة وأبراز الجمال."
+                : "Premium handbags crafted with elegance and sophistication. Designed for the modern woman who appreciates quality and style. "}
             </p>
           </div>
           <div>
@@ -45,10 +45,10 @@ export default function Footer() {
               {language === "ar" ? "تواصل معنا" : "Contact"}
             </h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-              {language === "ar" ? "البريد الإلكتروني: info@luxebags.com" : "Email: info@luxebags.com"}
+              {language === "ar" ? "البريد الإلكتروني: zakizikozaki597@gmail.com" : "Email: zakizikozaki597@gmail.com"}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {language === "ar" ? "الهاتف: +1 (555) 123-4567" : "Phone: +1 (555) 123-4567"}
+              {language === "ar" ? "الهاتف: 20 10 33569198" : "Phone: +20 10 33569198"}
             </p>
           </div>
         </div>

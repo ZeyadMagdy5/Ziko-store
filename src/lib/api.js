@@ -17,14 +17,15 @@ async function handleResponse(response) {
     console.error("API Error Response:", text);
 
     // Try to parse JSON error
+    let errorMessage;
     try {
       const errorData = JSON.parse(text);
-      const errorMessage = errorData.message || errorData.title || `API request failed: ${response.status}`;
-      throw new Error(errorMessage);
+      errorMessage = errorData.message || errorData.title || `API request failed: ${response.status}`;
     } catch (e) {
-      // If not JSON, throw with status
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      // If not JSON, use status
+      errorMessage = `API request failed: ${response.status} ${response.statusText}`;
     }
+    throw new Error(errorMessage);
   }
   return response.json();
 }

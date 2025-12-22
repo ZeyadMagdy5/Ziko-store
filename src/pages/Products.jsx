@@ -106,7 +106,13 @@ export default function Products() {
       } catch (err) {
         if (ignore) return;
         console.error("Error in loadProducts:", err);
-        setError(language === "ar" ? "فشل تحميل المنتجات. يرجى المحاولة لاحقاً." : "Failed to load products. Please try again later.");
+        // If 404 or "No products found", it just means empty result set for this filter
+        if (err.message && (err.message.includes("No products found") || err.message.includes("404"))) {
+          setProducts([]);
+          setError(null);
+        } else {
+          setError(language === "ar" ? "فشل تحميل المنتجات. يرجى المحاولة لاحقاً." : "Failed to load products. Please try again later.");
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -150,7 +156,7 @@ export default function Products() {
                 placeholder={language === "ar" ? "البحث عن منتجات..." : "Search products..."}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-accent outline-none"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-accent outline-none"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               {searchQuery && (

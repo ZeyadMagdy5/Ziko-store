@@ -15,7 +15,7 @@ export default function ProductCard({ product }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       whileHover={{ y: -8, transition: { duration: 0.2 } }}
-      className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-accent/20 dark:hover:shadow-accent/40 border border-transparent hover:border-accent/40 dark:hover:border-accent/60 transition-all duration-300 group"
+      className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_50px_rgba(255,255,255,0.05)] border border-gray-100 dark:border-gray-700 hover:border-accent/30 dark:hover:border-accent/40 transition-all duration-500 group"
     >
       <div className="relative overflow-hidden aspect-[4/5] bg-gray-100 dark:bg-gray-700">
         <motion.img

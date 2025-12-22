@@ -40,7 +40,7 @@ export default function Navbar() {
     >
       <div className={cn(
         "container mx-auto px-4 md:px-6 flex items-center justify-between transition-all duration-300",
-        scrolled ? "h-20" : "h-20 md:h-28"
+        scrolled ? "h-20" : "h-20 md:h-24"
       )}>
         <Link to="/" className="flex items-center transition-transform hover:scale-105">
           <img src="/images/logo.png" alt="Ziko Store" className="h-10 md:h-14 w-auto object-contain" />
