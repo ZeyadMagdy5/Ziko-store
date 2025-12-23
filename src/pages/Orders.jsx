@@ -85,6 +85,9 @@ export default function Orders() {
 
   const arabicTranslations = {
     "pending": "قيد الانتظار",
+    "pending payment": "في انتظار الدفع",
+    "pendingpayment": "في انتظار الدفع",
+    "pending_payment": "في انتظار الدفع",
     "processing": "قيد المعالجة",
     "shipped": "تم الشحن",
     "delivered": "تم التوصيل",
@@ -92,7 +95,8 @@ export default function Orders() {
     "expired": "منتهي الصلاحية",
     "paid": "مدفوع",
     "completed": "مكتمل",
-    "failed": "فشل الدفع"
+    "failed": "فشل الدفع",
+    "unpaid": "غير مدفوع"
   };
 
   const getStatusLabel = (status) => {
@@ -110,8 +114,8 @@ export default function Orders() {
     if (["paid", "delivered", "completed"].includes(statusLower)) {
       return "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
     }
-    if (["pending", "processing"].includes(statusLower)) {
-      return "bg-amber-50 text-red-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+    if (["pending", "processing", "pending payment", "pendingpayment", "pending_payment", "unpaid"].includes(statusLower)) {
+      return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
     }
     if (["shipped"].includes(statusLower)) {
       return "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
@@ -127,8 +131,8 @@ export default function Orders() {
     if (["completed", "paid"].includes(statusLower)) {
       return "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
     }
-    if (["pending"].includes(statusLower)) {
-      return "bg-amber-50 text-red-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+    if (["pending", "pending payment", "pendingpayment", "pending_payment", "unpaid"].includes(statusLower)) {
+      return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
     }
     if (["failed"].includes(statusLower)) {
       return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800";
@@ -136,44 +140,89 @@ export default function Orders() {
     return "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
+  const parseDate = (dateString) => {
+    if (!dateString) return null;
+    if (dateString instanceof Date) return dateString;
+
+    let str = String(dateString);
+    if (!str || str.startsWith("0001")) return null;
+
+    // Normalize ISO format (handle spaces and missing T)
+    str = str.replace(' ', 'T');
+
+    // If it's an ISO string without timezone info, assume UTC from server
+    if (str.includes('T') && !str.includes('Z') && !str.match(/[+-]\d{2}:?\d{2}$/)) {
+      str += 'Z';
+    }
+
+    const date = new Date(str);
+    return isNaN(date.getTime()) || date.getFullYear() < 1980 ? null : date;
+  };
+
+  const formatDate = (dateString, showTime = true) => {
+    const date = parseDate(dateString);
+    if (!date) return language === "ar" ? "غير متوفر" : "N/A";
+
     return date.toLocaleDateString(language === "ar" ? "ar-EG" : "en-US", {
       year: 'numeric',
-      month: 'long', // changed to long for better aesthetic
+      month: 'long',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      ...(showTime && {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     });
   };
 
-  // Check if order can be paid again (has failed payment or pending payment, and not expired)
+  // Check if order can be paid again (Strictly if pending and (no payment or last failed))
   const canPayAgain = (order) => {
-    const now = new Date();
-    const expiresAt = new Date(order.expiresAt);
-    const isExpired = now > expiresAt;
-    const statusLower = order.status?.toLowerCase() || "";
+    if (!order) return false;
 
-    // Can't pay if order is expired, paid, delivered, cancelled, or shipped
-    if (isExpired || statusLower === "paid" || statusLower === "delivered" ||
-      statusLower === "cancelled" || statusLower === "expired" || statusLower === "shipped") {
-      return false;
+    // Condition 1: Trust the order status from the server
+    // If the server says it's Pending, it's open for payment attempts
+    const status = order.status || order.orderStatus || "";
+    const statusLower = String(status).toLowerCase();
+
+    const payableStatuses = [
+      "pending",
+      "pending payment",
+      "pendingpayment",
+      "pending_payment",
+      "unpaid",
+      "failed" // Sometimes the whole order status might be failed
+    ];
+
+    if (!payableStatuses.includes(statusLower)) return false;
+
+    // Condition 2: Client-side clock check (Relaxed)
+    // We only block if the server provided an expiration date that is explicitly in the past
+    // However, if the status is still 'Pending', we should generally allow the attempt
+    // because the server is the ultimate authority.
+    const expiryDateStr = order.expiresAt || order.expiryDate || order.expirationDate || order.expiryTime;
+    const expiresAt = parseDate(expiryDateStr);
+    // Removed client-side expiration check to rely on server status
+
+    // Condition 3: Check payment history
+    // If there were attempts, allow retry if the last one wasn't successful
+    const paymentHistory = order.payments || order.orderPayments || order.paymentHistory;
+    if (paymentHistory && paymentHistory.length > 0) {
+      const lastPayment = paymentHistory[paymentHistory.length - 1];
+      const paymentStatusLower = String(lastPayment.status || "").toLowerCase();
+
+      // If last attempt is already paid/completed, or still pending, don't show Pay Again
+      // This prevents duplicate payments while one is being processed
+      const blockedStatuses = ["paid", "completed", "success", "pending", "pending payment", "pendingpayment", "pending_payment"];
+      if (blockedStatuses.includes(paymentStatusLower)) {
+        return false;
+      }
+
+      // Otherwise, only show it if the status is explicitly failed or unpaid
+      return ["failed", "unpaid"].includes(paymentStatusLower);
     }
 
-    // Check if there are any payments
-    if (!order.payments || order.payments.length === 0) {
-      // No payments yet, can pay if order is pending
-      return statusLower === "pending";
-    }
-
-    // Get the last payment
-    const lastPayment = order.payments[order.payments.length - 1];
-    const paymentStatusLower = lastPayment.status?.toLowerCase() || "";
-
-    // Can pay again if last payment failed or is pending
-    return paymentStatusLower === "failed" || paymentStatusLower === "pending";
+    // No payment attempts yet - definitely allow payment
+    return true;
   };
-
   const handlePayAgain = (orderId) => {
     navigate(`/cart?orderId=${orderId}`);
   };
@@ -258,9 +307,18 @@ export default function Orders() {
                         <h3 className="font-heading font-bold text-xl dark:text-white flex items-center gap-2 mb-1">
                           {language === "ar" ? "طلب #" : "Order #"}{order.id}
                         </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
-                          {formatDate(order.createdAt)}
-                        </p>
+                        <div className="flex flex-col gap-1">
+                          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
+                            <span className="opacity-70 text-[10px] uppercase font-bold tracking-tight">{language === "ar" ? "تاريخ الطلب:" : "Ordered:"}</span>
+                            {formatDate(order.createdAt || order.creationDate || order.createdDate || order.created)}
+                          </p>
+                          {(order.expiresAt || order.expiryDate || order.expiryTime) && (String(order.status || "").toLowerCase().includes("pending")) && (
+                            <p className="text-[10px] text-rose-500 dark:text-rose-400 font-bold flex items-center gap-1">
+                              <span className="opacity-70 uppercase tracking-tighter">{language === "ar" ? "ينتهي في:" : "Expires:"}</span>
+                              {formatDate(order.expiresAt || order.expiryDate || order.expiryTime)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -518,15 +576,19 @@ export default function Orders() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {language === "ar" ? "تاريخ الإنشاء:" : "Created At:"}
+                          {language === "ar" ? "تاریخ الطلب:" : "Created At:"}
                         </p>
-                        <p className="dark:text-white">{formatDate(orderDetails.createdAt)}</p>
+                        <p className="dark:text-white">
+                          {formatDate(orderDetails.createdAt || orderDetails.creationDate || orderDetails.createdDate || orderDetails.created)}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {language === "ar" ? "ينتهي في:" : "Expires At:"}
                         </p>
-                        <p className="dark:text-white">{formatDate(orderDetails.expiresAt)}</p>
+                        <p className="dark:text-white">
+                          {formatDate(orderDetails.expiresAt || orderDetails.expiryDate || orderDetails.expirationDate || orderDetails.expiryTime)}
+                        </p>
                       </div>
                     </div>
 
@@ -632,6 +694,27 @@ export default function Orders() {
                     {language === "ar" ? "فشل تحميل التفاصيل" : "Failed to load details"}
                   </div>
                 )}
+
+                {/* Modal Footer with Actions */}
+                <div className="mt-8 pt-6 border-t dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="w-full sm:w-auto">
+                    {orderDetails && canPayAgain(orderDetails) && (
+                      <button
+                        onClick={() => handlePayAgain(orderDetails.id)}
+                        className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg hover:shadow-emerald-500/30 transform hover:-translate-y-0.5 font-bold flex items-center justify-center gap-2"
+                      >
+                        <CreditCard size={20} />
+                        {language === "ar" ? "دفع مرة أخرى" : "Pay Again"}
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className="w-full sm:w-auto px-8 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-bold"
+                  >
+                    {language === "ar" ? "إغلاق" : "Close"}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

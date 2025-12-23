@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { pageVariants } from "../lib/animations";
-import { createUserOrder, createUserPayment } from "../lib/api";
+import { fetchUserOrderById, createUserOrder, createUserPayment } from "../lib/api";
 
 export default function Cart() {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
@@ -17,6 +17,8 @@ export default function Cart() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [orderId, setOrderId] = useState(null);
+  const [retryOrderDetails, setRetryOrderDetails] = useState(null);
+  const [loadingRetry, setLoadingRetry] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -35,8 +37,10 @@ export default function Cart() {
 
     if (orderIdParam) {
       console.log("Payment retry detected. Order ID:", orderIdParam);
-      setOrderId(Number(orderIdParam));
+      const id = Number(orderIdParam);
+      setOrderId(id);
       setStep('payment');
+      fetchRetryDetails(id);
     }
 
     if (errorParam) {
@@ -48,6 +52,23 @@ export default function Cart() {
       setSearchParams({});
     }
   }, [searchParams, setSearchParams]);
+
+  const fetchRetryDetails = async (id) => {
+    setLoadingRetry(true);
+    try {
+      const response = await fetchUserOrderById(id);
+      if (response.success) {
+        setRetryOrderDetails(response.data);
+      } else {
+        setError(response.message || "Failed to load order details for payment");
+      }
+    } catch (err) {
+      console.error("Fetch Retry Details Error:", err);
+      setError(err.message || "Could not load order information");
+    } finally {
+      setLoadingRetry(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -380,7 +401,11 @@ export default function Cart() {
 
             <div className="flex justify-between mb-4 text-gray-600 dark:text-gray-400">
               <span>{language === "ar" ? "المجموع الفرعي" : "Subtotal"}</span>
-              <span>{cartTotal.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}</span>
+              <span>
+                {retryOrderDetails
+                  ? retryOrderDetails.finalPrice.toFixed(2)
+                  : cartTotal.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+              </span>
             </div>
             <div className="flex justify-between mb-4 text-gray-600 dark:text-gray-400">
               <span>{language === "ar" ? "الشحن" : "Shipping"}</span>
@@ -388,7 +413,11 @@ export default function Cart() {
             </div>
             <div className="border-t dark:border-gray-700 pt-4 mb-6 flex justify-between font-bold text-lg dark:text-white">
               <span>{language === "ar" ? "الإجمالي" : "Total"}</span>
-              <span>{cartTotal.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}</span>
+              <span>
+                {retryOrderDetails
+                  ? retryOrderDetails.finalPrice.toFixed(2)
+                  : cartTotal.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
+              </span>
             </div>
 
             {error && (
