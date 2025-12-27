@@ -29,7 +29,7 @@ export default function Collections() {
 
                 console.log("Collections API response:", data);
                 console.log("Extracted collections:", items);
-                setCollections(items);
+                setCollections(items.filter(c => c.isActive !== false));
             } catch (err) {
                 console.error("Failed to load collections", err);
             } finally {

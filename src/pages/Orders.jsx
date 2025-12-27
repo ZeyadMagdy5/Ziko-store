@@ -83,61 +83,59 @@ export default function Orders() {
     setExpandedOrders(newExpanded);
   };
 
+  // Arabic Translations Mapping for both Status and Payment
   const arabicTranslations = {
-    "pending": "قيد الانتظار",
-    "pending payment": "في انتظار الدفع",
-    "pendingpayment": "في انتظار الدفع",
-    "pending_payment": "في انتظار الدفع",
-    "processing": "قيد المعالجة",
-    "shipped": "تم الشحن",
-    "delivered": "تم التوصيل",
-    "cancelled": "ملغي",
+    // Order Statuses
+    "pending": "قيد الانتظار", "0": "قيد الانتظار",
+    "processing": "قيد التجهيز", "1": "قيد التجهيز",
+    "shipped": "تم الشحن", "2": "تم الشحن",
+    "delivered": "تم التوصيل", "3": "تم التوصيل",
+    "cancelled": "ملغي", "4": "ملغي",
     "expired": "منتهي الصلاحية",
+
+    // Payment Statuses
     "paid": "مدفوع",
-    "completed": "مكتمل",
+    "unpaid": "غير مدفوع",
     "failed": "فشل الدفع",
-    "unpaid": "غير مدفوع"
+    "completed": "مكتمل",
+    "pending payment": "في انتظار الدفع"
   };
 
   const getStatusLabel = (status) => {
     if (!status) return "";
     const lowerStatus = status.toLowerCase();
+
+    // Explicit mapping for "processing" status (typically ID 1)
+    if (lowerStatus === 'processing' || lowerStatus === 'under preparation') {
+      return language === "ar" ? "قيد التجهيز" : "Processing";
+    }
+
     if (language === "ar") {
       return arabicTranslations[lowerStatus] || status;
     }
     return status;
   };
 
-  const getStatusBadgeColor = (status) => {
-    const statusLower = status?.toLowerCase() || "";
-    // Soft pastel colors for easier reading (Light mode specific mainly, but works in dark mode as contrast is handled)
-    if (["paid", "delivered", "completed"].includes(statusLower)) {
-      return "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
-    }
-    if (["pending", "processing", "pending payment", "pendingpayment", "pending_payment", "unpaid"].includes(statusLower)) {
-      return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
-    }
-    if (["shipped"].includes(statusLower)) {
-      return "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-    }
-    if (["cancelled", "expired", "failed"].includes(statusLower)) {
-      return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800";
-    }
-    return "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+  // Badge Color for ORDER STATUS
+  const getOrderStatusColor = (status) => {
+    const s = String(status || "").toLowerCase();
+    if (s === "pending") return "bg-yellow-100 text-yellow-800 border border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700";
+    if (s === "processing" || s === "under preparation") return "bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700";
+    if (s === "shipped") return "bg-indigo-100 text-indigo-800 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700";
+    if (s === "delivered") return "bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700";
+    if (s === "cancelled" || s === "expired") return "bg-red-100 text-red-800 border border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700";
+
+    return "bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-300";
   };
 
+  // Badge Color for PAYMENT STATUS
   const getPaymentStatusColor = (status) => {
-    const statusLower = status?.toLowerCase() || "";
-    if (["completed", "paid"].includes(statusLower)) {
-      return "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
-    }
-    if (["pending", "pending payment", "pendingpayment", "pending_payment", "unpaid"].includes(statusLower)) {
-      return "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
-    }
-    if (["failed"].includes(statusLower)) {
-      return "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800";
-    }
-    return "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700";
+    const s = String(status || "").toLowerCase();
+    if (s === "paid" || s === "completed" || s === "success") return "bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700";
+    if (s === "failed") return "bg-red-100 text-red-800 border border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700";
+    if (s === "unpaid" || s === "pending") return "bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700";
+
+    return "bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-300";
   };
 
   const parseDate = (dateString) => {
@@ -174,54 +172,100 @@ export default function Orders() {
     });
   };
 
-  // Check if order can be paid again (Strictly if pending and (no payment or last failed))
-  const canPayAgain = (order) => {
-    if (!order) return false;
+  // Helper to determine payment status from PaymobTransactionObj or fallback
+  const getEffectivePaymentStatus = (order) => {
+    if (!order) return 'unpaid';
 
-    // Condition 1: Trust the order status from the server
-    // If the server says it's Pending, it's open for payment attempts
-    const status = order.status || order.orderStatus || "";
-    const statusLower = String(status).toLowerCase();
+    // 1. Try PaymobTransactionObj (Priority)
+    if (order.paymobTransactionObj) {
+      let transaction = order.paymobTransactionObj;
+      // Handle case where it might be a JSON string
+      if (typeof transaction === 'string') {
+        try {
+          transaction = JSON.parse(transaction);
+        } catch (e) {
+          console.error("Failed to parse PaymobTransactionObj", e);
+          // Don't fallback yet, checking if we can assume anything? 
+          // If parse fails, maybe fallback to paymobTransactionObj as is if it was object?
+          // No, if it was string and failed, we have nothing.
+        }
+      }
 
-    const payableStatuses = [
-      "pending",
-      "pending payment",
-      "pendingpayment",
-      "pending_payment",
-      "unpaid",
-      "failed" // Sometimes the whole order status might be failed
-    ];
+      if (transaction && typeof transaction === 'object') {
+        // Logic from requirements:
+        // Success: true -> 'paid' (Green)
+        // Success: false && Pending: false -> 'failed' (Red)
+        // Pending: true -> 'unpaid' (Yellow) - mapped to 'unpaid' which renders yellow/pending
 
-    if (!payableStatuses.includes(statusLower)) return false;
+        if (transaction.success === true) return 'paid';
+        if (transaction.pending === true) return 'unpaid';
+        if (transaction.success === false && transaction.pending === false) return 'failed';
 
-    // Condition 2: Client-side clock check (Relaxed)
-    // We only block if the server provided an expiration date that is explicitly in the past
-    // However, if the status is still 'Pending', we should generally allow the attempt
-    // because the server is the ultimate authority.
-    const expiryDateStr = order.expiresAt || order.expiryDate || order.expirationDate || order.expiryTime;
-    const expiresAt = parseDate(expiryDateStr);
-    // Removed client-side expiration check to rely on server status
+        // Implicit fallback for other cases? 
+        // If success is false and pending is undefined? defaults to failed presumably.
+        if (transaction.success === false) return 'failed';
+      }
+    }
 
-    // Condition 3: Check payment history
-    // If there were attempts, allow retry if the last one wasn't successful
+    // 2. Fallback to existing paymentStatus
+    if (order.paymentStatus !== undefined && order.paymentStatus !== null) {
+      const s = String(order.paymentStatus).toLowerCase();
+      if (['paid', 'completed', 'success', '1'].includes(s)) return 'paid';
+      if (['failed', '2'].includes(s)) return 'failed';
+      return 'unpaid';
+    }
+
+    // 3. Fallback to Payment History (Last payment)
     const paymentHistory = order.payments || order.orderPayments || order.paymentHistory;
     if (paymentHistory && paymentHistory.length > 0) {
       const lastPayment = paymentHistory[paymentHistory.length - 1];
-      const paymentStatusLower = String(lastPayment.status || "").toLowerCase();
-
-      // If last attempt is already paid/completed, or still pending, don't show Pay Again
-      // This prevents duplicate payments while one is being processed
-      const blockedStatuses = ["paid", "completed", "success", "pending", "pending payment", "pendingpayment", "pending_payment"];
-      if (blockedStatuses.includes(paymentStatusLower)) {
-        return false;
-      }
-
-      // Otherwise, only show it if the status is explicitly failed or unpaid
-      return ["failed", "unpaid"].includes(paymentStatusLower);
+      const s = String(lastPayment.status || "").toLowerCase();
+      if (['paid', 'completed', 'success'].includes(s)) return 'paid';
+      if (['failed'].includes(s)) return 'failed';
     }
 
-    // No payment attempts yet - definitely allow payment
-    return true;
+    return 'unpaid';
+  };
+
+  // Helper to determine effective order status (Paid + Pending -> Processing)
+  const getEffectiveOrderStatus = (order) => {
+    if (!order) return "";
+    let status = String(order.status || "").toLowerCase();
+    const paymentStatus = getEffectivePaymentStatus(order);
+
+    // FIX: If backend returns 'paid'/'completed' as order status (wrong usage), remap it based on payment.
+    if (status === 'paid' || status === 'completed' || status === 'success') {
+      if (paymentStatus === 'paid') return 'processing';
+      return 'pending';
+    }
+
+    // Business Rule: If Paid and Pending -> Processing
+    if (paymentStatus === 'paid' && (status === 'pending' || status === '0')) {
+      return 'processing';
+    }
+
+    // Normalization: Map strings/IDs to standard keys for Badge Colors
+    if (status === '1') return 'processing';
+    if (status === '2') return 'shipped';
+    if (status === '3') return 'delivered';
+    if (status === '4') return 'cancelled';
+
+    return status;
+  };
+
+  // Check if order can be paid again
+  const canPayAgain = (order) => {
+    if (!order) return false;
+
+    // 1. Block if Cancelled
+    const orderStatus = String(order.status || "").toLowerCase();
+    if (orderStatus === 'cancelled' || orderStatus === '4') return false;
+
+    // 2. Check Effective Payment Status
+    const status = getEffectivePaymentStatus(order);
+
+    // Allow if Unpaid or Failed
+    return status === 'unpaid' || status === 'failed';
   };
   const handlePayAgain = (orderId) => {
     navigate(`/cart?orderId=${orderId}`);
@@ -312,26 +356,34 @@ export default function Orders() {
                             <span className="opacity-70 text-[10px] uppercase font-bold tracking-tight">{language === "ar" ? "تاريخ الطلب:" : "Ordered:"}</span>
                             {formatDate(order.createdAt || order.creationDate || order.createdDate || order.created)}
                           </p>
-                          {(order.expiresAt || order.expiryDate || order.expiryTime) && (String(order.status || "").toLowerCase().includes("pending")) && (
-                            <p className="text-[10px] text-rose-500 dark:text-rose-400 font-bold flex items-center gap-1">
-                              <span className="opacity-70 uppercase tracking-tighter">{language === "ar" ? "ينتهي في:" : "Expires:"}</span>
-                              {formatDate(order.expiresAt || order.expiryDate || order.expiryTime)}
-                            </p>
-                          )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 border-t md:border-t-0 border-gray-100 dark:border-gray-700 pt-4 md:pt-0 mt-2 md:mt-0 justify-between md:justify-end">
-                      <div className="text-right mr-4">
+                    <div className="flex flex-col items-end gap-2 mt-2 md:mt-0">
+                      <div className="text-right">
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">{language === "ar" ? "الإجمالي" : "TOTAL"}</p>
                         <span className="font-heading font-bold text-2xl text-slate-900 dark:text-white">
                           {(Number(order.finalPrice) || 0).toFixed(2)} <span className="text-sm font-sans font-medium text-slate-400">{language === "ar" ? "ج.م" : "EGP"}</span>
                         </span>
                       </div>
-                      <span className={`${getStatusBadgeColor(order.status)} px-5 py-2 rounded-full text-sm font-bold shadow-lg transition-transform hover:scale-105 active:scale-95`}>
-                        {getStatusLabel(order.status)}
-                      </span>
+
+                      {/* Dual Badges Container */}
+                      <div className="flex flex-wrap gap-2 justify-end mt-1">
+                        {/* Order Status Badge */}
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold ${getOrderStatusColor(getEffectiveOrderStatus(order))}`}>
+                          <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />
+                          <span>{language === "ar" ? "حالة الطلب:" : "Status:"}</span>
+                          <span className="uppercase">{getStatusLabel(getEffectiveOrderStatus(order))}</span>
+                        </div>
+
+                        {/* Payment Status Badge */}
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold ${getPaymentStatusColor(getEffectivePaymentStatus(order))}`}>
+                          <div className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />
+                          <span>{language === "ar" ? "الدفع:" : "Payment:"}</span>
+                          <span className="uppercase">{getStatusLabel(getEffectivePaymentStatus(order))}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -372,7 +424,7 @@ export default function Orders() {
                   </div>
                 )}
 
-                {/* Collapsible Details Section */}
+                {/* Collapsible Details Section - (Content remains same, just wrapper) */}
                 <AnimatePresence>
                   {expandedOrders.has(order.id) && (
                     <motion.div
@@ -456,10 +508,10 @@ export default function Orders() {
                     {canPayAgain(order) && (
                       <button
                         onClick={() => handlePayAgain(order.id)}
-                        className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg hover:shadow-emerald-500/30 transform hover:-translate-y-0.5 font-bold text-sm flex items-center justify-center gap-2"
+                        className="flex-1 sm:flex-none px-6 py-3 bg-accent hover:bg-yellow-600 text-white rounded-xl transition-all shadow-lg shadow-accent/20 transform hover:-translate-y-0.5 font-bold text-sm flex items-center justify-center gap-2 border border-transparent"
                       >
                         <CreditCard size={18} />
-                        {language === "ar" ? "دفع مرة أخرى" : "Pay Again"}
+                        {language === "ar" ? "ادفع الآن" : "Pay Now"}
                       </button>
                     )}
                     <button
@@ -557,13 +609,21 @@ export default function Orders() {
                 ) : orderDetails ? (
                   <div className="space-y-6">
                     {/* Order Info */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           {language === "ar" ? "الحالة:" : "Status:"}
                         </p>
-                        <span className={`${getStatusBadgeColor(orderDetails.status)} px-3 py-1 rounded-full text-sm font-medium inline-block mt-1`}>
-                          {getStatusLabel(orderDetails.status)}
+                        <span className={`${getOrderStatusColor(getEffectiveOrderStatus(orderDetails))} px-3 py-1 rounded-full text-sm font-medium inline-block mt-1`}>
+                          {getStatusLabel(getEffectiveOrderStatus(orderDetails))}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {language === "ar" ? "حالة الدفع:" : "Payment Status:"}
+                        </p>
+                        <span className={`${getPaymentStatusColor(getEffectivePaymentStatus(orderDetails))} px-3 py-1 rounded-full text-sm font-medium inline-block mt-1`}>
+                          {getStatusLabel(getEffectivePaymentStatus(orderDetails))}
                         </span>
                       </div>
                       <div>
@@ -576,20 +636,30 @@ export default function Orders() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {language === "ar" ? "الاسم:" : "Name:"}
+                        </p>
+                        <p className="dark:text-white font-medium">
+                          {orderDetails.name || orderDetails.customerName || selectedOrder?.name || (language === "ar" ? "غير متوفر" : "N/A")}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           {language === "ar" ? "تاریخ الطلب:" : "Created At:"}
                         </p>
                         <p className="dark:text-white">
                           {formatDate(orderDetails.createdAt || orderDetails.creationDate || orderDetails.createdDate || orderDetails.created)}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {language === "ar" ? "ينتهي في:" : "Expires At:"}
-                        </p>
-                        <p className="dark:text-white">
-                          {formatDate(orderDetails.expiresAt || orderDetails.expiryDate || orderDetails.expirationDate || orderDetails.expiryTime)}
-                        </p>
-                      </div>
+                      {getEffectivePaymentStatus(orderDetails) !== 'paid' && (
+                        <div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {language === "ar" ? "ينتهي في:" : "Expires At:"}
+                          </p>
+                          <p className="dark:text-white">
+                            {formatDate(orderDetails.expiresAt || orderDetails.expiryDate || orderDetails.expirationDate || orderDetails.expiryTime)}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="border-t dark:border-gray-700 pt-4">

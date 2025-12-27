@@ -59,12 +59,15 @@ export default function Cart() {
       const response = await fetchUserOrderById(id);
       if (response.success) {
         setRetryOrderDetails(response.data);
+        return response.data;
       } else {
         setError(response.message || "Failed to load order details for payment");
+        return null;
       }
     } catch (err) {
       console.error("Fetch Retry Details Error:", err);
       setError(err.message || "Could not load order information");
+      return null;
     } finally {
       setLoadingRetry(false);
     }
@@ -124,6 +127,39 @@ export default function Cart() {
     }
   };
 
+  const getPendingPaymentUrl = (order) => {
+    if (!order) return null;
+    let url = null;
+    if (order.paymobTransactionObj) {
+      let txn = order.paymobTransactionObj;
+      if (typeof txn === 'string') try { txn = JSON.parse(txn); } catch(e){}
+      if (txn && typeof txn === 'object') {
+          url = txn.url || txn.iframe_url || txn.redirect_url || txn.payment_url;
+      }
+    }
+    if (!url && order.payments && Array.isArray(order.payments)) {
+        const last = order.payments[order.payments.length - 1];
+        if (last && (last.status === 'pending' || last.status === 0)) {
+            url = last.paymentUrl || last.redirectUrl || last.iframeUrl;
+        }
+    }
+    return url;
+  };
+
+  const showPendingPaymentUI = (url) => {
+    setError(
+        <div className="flex flex-col gap-2 items-start text-sm">
+          <span className="font-bold text-red-600">{language === "ar" ? "توجد عملية دفع معلقة." : "Payment is currently being processed."}</span>
+          {url && (
+            <a href={url} className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700 transition w-full text-center">
+              {language === "ar" ? "استكمال الدفع" : "Resume Transaction"}
+            </a>
+          )}
+          <span className="text-xs text-gray-500">{language === "ar" ? "يرجى الانتظار بضع دقائق قبل المحاولة مرة أخرى." : "Please wait a few minutes before trying again."}</span>
+        </div>
+    );
+  };
+
   const handlePayment = async () => {
     if (!paymentMethod) return;
     if (paymentMethod === 2 && !walletPhone) {
@@ -133,8 +169,18 @@ export default function Cart() {
 
     if (!orderId) {
       setError(language === "ar" ? "معرف الطلب مفقود" : "Order ID is missing");
-      console.error("Cannot create payment: orderId is null or undefined");
       return;
+    }
+
+    // Pre-check for pending payment (Frontend Optimization)
+    if (retryOrderDetails) {
+       const pendingUrl = getPendingPaymentUrl(retryOrderDetails);
+       // We only block if we have a valid URL to resume, otherwise we let the backend decide (maybe it expired)
+       if (pendingUrl) {
+           console.log("Pre-check found pending URL:", pendingUrl);
+           showPendingPaymentUI(pendingUrl);
+           return;
+       }
     }
 
     setLoading(true);
@@ -146,29 +192,69 @@ export default function Cart() {
         paymentMethodId: Number(paymentMethod)
       };
 
-      // Only include walletPhoneNumber if payment method is wallet
       if (paymentMethod === 2) {
         paymentPayload.walletPhoneNumber = walletPhone;
       }
 
       console.log("Submitting Payment Payload:", paymentPayload);
-      console.log("Payload types - orderId:", typeof paymentPayload.orderId, "paymentMethodId:", typeof paymentPayload.paymentMethodId);
 
       const response = await createUserPayment(paymentPayload);
       if (response.success && response.data.paymentUrl) {
-        // Clear cart state
         clearCart();
-        // Persist clear to localStorage immediately before redirect
         localStorage.removeItem('cart');
-
-        // Small delay to ensure state might have a chance to propagate or just redirect
         window.location.href = response.data.paymentUrl;
       } else {
-        setError(response.message || "Failed to initiate payment");
+        const msg = response.message?.toLowerCase() || "";
+        if (msg.includes("pending") || msg.includes("completed")) {
+           const updatedOrder = await fetchRetryDetails(Number(orderId));
+           if (updatedOrder && (updatedOrder.paymentStatus === 1 || String(updatedOrder.paymentStatus).toLowerCase() === 'paid')) {
+              clearCart();
+              localStorage.removeItem('cart');
+              window.location.href = '/orders';
+              return;
+           }
+           
+           const resumeUrl = getPendingPaymentUrl(updatedOrder);
+           if (resumeUrl) {
+               showPendingPaymentUI(resumeUrl);
+           } else {
+               showPendingPaymentUI(null);
+           }
+        } else {
+           setError(response.message || "Failed to initiate payment");
+        }
       }
     } catch (err) {
       console.error("Payment Error:", err);
-      setError(err.message || "An unexpected error occurred");
+      
+      const msg = err.message?.toLowerCase() || "";
+      if (msg.includes("pending") || msg.includes("completed")) {
+         try {
+           const updatedOrder = await fetchRetryDetails(orderId ? Number(orderId) : null);
+           console.log("Updated Order for Retry:", updatedOrder);
+           
+           if (updatedOrder) {
+             if (updatedOrder.paymentStatus === 1 || String(updatedOrder.paymentStatus).toLowerCase() === 'paid') {
+                clearCart();
+                localStorage.removeItem('cart');
+                window.location.href = '/orders';
+                return;
+             }
+             
+             const resumeUrl = getPendingPaymentUrl(updatedOrder);
+             if (resumeUrl) {
+                 showPendingPaymentUI(resumeUrl);
+             } else {
+                 showPendingPaymentUI(null);
+             }
+           }
+         } catch (innerErr) {
+            console.error(innerErr);
+            setError(err.message);
+         }
+      } else {
+         setError(err.message || "An unexpected error occurred");
+      }
     } finally {
       setLoading(false);
     }
@@ -407,10 +493,7 @@ export default function Cart() {
                   : cartTotal.toFixed(2)} {language === "ar" ? "ج.م" : "EGP"}
               </span>
             </div>
-            <div className="flex justify-between mb-4 text-gray-600 dark:text-gray-400">
-              <span>{language === "ar" ? "الشحن" : "Shipping"}</span>
-              <span>{language === "ar" ? "مجاني" : "Free"}</span>
-            </div>
+
             <div className="border-t dark:border-gray-700 pt-4 mb-6 flex justify-between font-bold text-lg dark:text-white">
               <span>{language === "ar" ? "الإجمالي" : "Total"}</span>
               <span>
@@ -423,7 +506,7 @@ export default function Cart() {
             {error && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-100 dark:border-red-900/30 flex flex-col gap-2">
                 <span>{error}</span>
-                {(error.includes("products") || error.includes("منتجات")) && (error.includes("unavailable") || error.includes("غير متوفرة")) && (
+                {(typeof error === 'string' && (error.includes("products") || error.includes("منتجات"))) && (error.includes("unavailable") || error.includes("غير متوفرة")) && (
                   <button
                     onClick={clearCart}
                     className="text-xs bg-red-100 dark:bg-red-800 hover:bg-red-200 dark:hover:bg-red-700 text-red-700 dark:text-white px-2 py-1 rounded transition-colors w-fit self-end"

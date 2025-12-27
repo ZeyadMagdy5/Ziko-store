@@ -121,7 +121,7 @@ export default function Home() {
                     collectionItems = collectionsData.items;
                 }
 
-                setCollections(collectionItems);
+                setCollections(collectionItems.filter(c => c.isActive !== false));
             } catch (err) {
                 console.error("Failed to load home data", err);
             } finally {
