@@ -88,7 +88,13 @@ export async function fetchUserDiscountById(id) {
 
 export function resolveImageUrl(imagePath) {
   if (!imagePath || typeof imagePath !== 'string') return "/images/bag-1.png"; // Fallback placeholder
-  if (imagePath.startsWith('http') || imagePath.startsWith('data:')) {
+  
+  // Force HTTPS for any http URL (including Cloudinary)
+  if (imagePath.startsWith('http:')) {
+    return imagePath.replace('http:', 'https:');
+  }
+  
+  if (imagePath.startsWith('https') || imagePath.startsWith('data:')) {
     return imagePath;
   }
   // Remove leading slash if present 
