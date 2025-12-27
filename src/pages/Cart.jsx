@@ -33,6 +33,10 @@ export default function Cart() {
 
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
+  useEffect(() => {
     const orderIdParam = searchParams.get('orderId');
     const errorParam = searchParams.get('error');
 
