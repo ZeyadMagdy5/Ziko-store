@@ -6,6 +6,7 @@ import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { pageVariants } from "../lib/animations";
 import { fetchUserOrderById, createUserOrder, createUserPayment } from "../lib/api";
+import { convertArabicToEnglish } from "../lib/utils";
 
 export default function Cart() {
   const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
@@ -74,7 +75,11 @@ export default function Cart() {
   };
 
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    let value = e.target.value;
+    if (e.target.name === 'phone') {
+        value = convertArabicToEnglish(value);
+    }
+    setFormData({ ...formData, [e.target.name]: value });
   };
 
   const handleCreateOrder = async (e) => {
@@ -467,7 +472,7 @@ export default function Cart() {
                     <input
                       type="tel"
                       value={walletPhone}
-                      onChange={(e) => setWalletPhone(e.target.value)}
+                      onChange={(e) => setWalletPhone(convertArabicToEnglish(e.target.value))}
                       className="w-full px-4 py-3 rounded-lg border dark:border-gray-700 dark:bg-gray-900 dark:text-white focus:ring-2 focus:ring-accent outline-none"
                       placeholder="01xxxxxxxxx"
                     />
