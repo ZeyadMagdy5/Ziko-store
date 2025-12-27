@@ -347,39 +347,44 @@ export default function Home() {
             <AnimatePresence>
                 {paymentStatus && (
                     <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -50 }}
-                        className="fixed top-24 left-1/2 -translate-x-1/2 z-[110] w-full max-w-md px-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
                     >
-                        <div className={`p-6 rounded-xl shadow-2xl ${paymentStatus === 'success'
-                            ? 'bg-green-500 text-white'
-                            : 'bg-red-500 text-white'
-                            }`}>
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className={`w-full max-w-md p-6 rounded-2xl shadow-2xl ${paymentStatus === 'success'
+                                ? 'bg-green-600 text-white'
+                                : 'bg-red-600 text-white'
+                                }`}
+                        >
                             <div className="flex items-center gap-4">
                                 {paymentStatus === 'success' ? (
-                                    <CheckCircle size={32} className="shrink-0" />
+                                    <CheckCircle size={40} className="shrink-0 text-white/90" />
                                 ) : (
-                                    <XCircle size={32} className="shrink-0" />
+                                    <XCircle size={40} className="shrink-0 text-white/90" />
                                 )}
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-lg mb-1">
+                                    <h3 className="font-bold text-xl mb-1">
                                         {paymentStatus === 'success'
                                             ? (language === "ar" ? "نجح الدفع!" : "Payment Successful!")
                                             : (language === "ar" ? "فشل الدفع" : "Payment Failed")
                                         }
                                     </h3>
-                                    <p className="text-sm opacity-90">{paymentMessage}</p>
+                                    <p className="text-base opacity-95 leading-relaxed">{paymentMessage}</p>
                                     {paymentStatus === 'error' && (
-                                        <p className="text-xs mt-2 opacity-75">
+                                        <p className="text-sm mt-3 opacity-80 font-medium bg-white/10 p-2 rounded-lg inline-block">
                                             {language === "ar"
-                                                ? "جاري إعادة التوجيه لإعادة المحاولة..."
-                                                : "Redirecting to retry payment..."}
+                                                ? "جاري إعادة التوجيه..."
+                                                : "Redirecting..."}
                                         </p>
                                     )}
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
