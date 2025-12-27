@@ -156,7 +156,7 @@ export default function Home() {
             const firstImg = (Array.isArray(current.images) && current.images.length > 0) ? current.images[0] : null;
 
             return (
-                <section className="relative h-[calc(100vh-5rem)] flex items-center justify-center overflow-hidden bg-primary touch-none">
+                <section className="relative h-[calc(100vh-5rem)] flex items-center justify-center overflow-hidden bg-primary">
                     <AnimatePresence mode="wait" initial={false}>
                         <motion.div
                             key={current.id}
