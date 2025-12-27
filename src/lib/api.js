@@ -1,5 +1,5 @@
 // Direct API connection as requested, using relative path for proxy support
-export const BASE_URL = 'https://bags-shop.runasp.net';
+export const BASE_URL = '';
 export const IMAGE_BASE_URL = 'https://bags-shop.runasp.net';
 
 
