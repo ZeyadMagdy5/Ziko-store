@@ -1,15 +1,25 @@
-// Direct API connection as requested, using relative path for proxy support
-export const BASE_URL = '';
-export const IMAGE_BASE_URL = 'https://bags-shop.runasp.net';
+import { getUserKey } from './utils';
 
+// Use environment variable for base URL, with valid fallback
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://bags-shop.runasp.net';
+export const IMAGE_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://bags-shop.runasp.net';
+
+// Debug logging to help identify configuration issues
+console.log("API Configuration:", {
+  BASE_URL,
+  MODE: import.meta.env.MODE,
+  VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL
+});
 
 function getHeaders() {
+  const token = getUserKey();
   return {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Accept': 'application/json',
+    'Authorization': `Bearer ${token}`,
+    'x-user-key': token
   };
 }
-
 
 async function handleResponse(response) {
   if (!response.ok) {
@@ -27,7 +37,15 @@ async function handleResponse(response) {
     }
     throw new Error(errorMessage);
   }
-  return response.json();
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.indexOf("application/json") !== -1) {
+    return response.json();
+  } else {
+    // If we get HTML (likely 404/SPA fallback) or plain text, throw a helpful error
+    const text = await response.text();
+    console.error("API Expected JSON but got:", contentType, text.substring(0, 100));
+    throw new Error(`API Error: Expected JSON response but received ${contentType || 'unknown type'}. Path: ${response.url}`);
+  }
 }
 
 export async function fetchUserProducts(params = {}) {
@@ -81,19 +99,14 @@ export async function fetchUserDiscountById(id) {
   return handleResponse(response);
 }
 
-
-
-
-
-
 export function resolveImageUrl(imagePath) {
   if (!imagePath || typeof imagePath !== 'string') return "/images/bag-1.png"; // Fallback placeholder
-  
+
   // Force HTTPS for any http URL (including Cloudinary)
   if (imagePath.startsWith('http:')) {
     return imagePath.replace('http:', 'https:');
   }
-  
+
   if (imagePath.startsWith('https') || imagePath.startsWith('data:')) {
     return imagePath;
   }
@@ -102,14 +115,18 @@ export function resolveImageUrl(imagePath) {
   return `${IMAGE_BASE_URL}/${cleanPath}`;
 }
 
-
-
 export async function createUserOrder(orderData) {
+  const userKey = getUserKey();
+  const payload = {
+    ...orderData, // Contains name, address, phone, items
+    userkey: userKey // Ensure userkey is sent in body as per schema
+  };
+
   const response = await fetch(`${BASE_URL}/api/user/orders`, {
     method: 'POST',
     headers: getHeaders(),
     credentials: 'include',
-    body: JSON.stringify(orderData)
+    body: JSON.stringify(payload)
   });
   return handleResponse(response);
 }
@@ -126,6 +143,7 @@ export async function createUserPayment(paymentData) {
 
 export async function fetchUserOrders(params = {}) {
   const query = new URLSearchParams(params).toString();
+  // Headers now include Authorization/user-key so history should work
   const response = await fetch(`${BASE_URL}/api/user/orders?${query}`, {
     headers: getHeaders(),
     credentials: 'include'

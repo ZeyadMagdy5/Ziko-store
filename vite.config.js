@@ -12,6 +12,15 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  preview: {
+    proxy: {
+      '/api': {
+        target: 'https://bags-shop.runasp.net',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 })
 
